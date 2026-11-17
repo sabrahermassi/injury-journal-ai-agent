@@ -10,10 +10,10 @@ Every RAG app has two flows: **indexing** (saving data) and **querying** (search
 
 ```mermaid
 flowchart TD
-    A["1. You write a messy note<br/><i>'Twisted my knee running, pain 6'</i>"]
-    B["2. The LLM extracts the fields (structured outputs)<br/><i>{ bodyPart: 'knee', severity: 6, cause: 'running' }</i>"]
-    C["3. The embedding model turns the note into numbers (a vector)<br/><i>[0.12, -0.48, 0.91, ...]</i>"]
-    D["4. Save note + fields + vector in notes.json"]
+    A["1. You write a messy note<br/>'Twisted my knee running, pain 6'"]
+    B["2. The LLM extracts the fields<br/>(structured outputs)<br/>bodyPart: knee, severity: 6, cause: running"]
+    C["3. The embedding model turns<br/>the note into a vector<br/>[0.12, -0.48, 0.91, ...]"]
+    D["4. Save note + fields + vector<br/>in notes.json"]
     A --> B --> C --> D
 ```
 
@@ -21,10 +21,10 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A["1. You type a search<br/><i>'knee pain after running'</i>"]
-    B["2. The embedding model turns your search into a vector"]
+    A["1. You type a search<br/>'knee pain after running'"]
+    B["2. The embedding model turns<br/>your search into a vector"]
     C["3. Compare it with every saved vector<br/>(cosine score, 0 to 1)"]
-    D["4. Show the 5 closest notes with their fields"]
+    D["4. Show the 5 closest notes<br/>with their fields"]
     A --> B --> C --> D
 ```
 

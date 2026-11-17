@@ -7,12 +7,12 @@
 
 ```mermaid
 flowchart TD
-    A["Build messages<br/>system: rules · user: note"]
+    A["Build messages<br/>system: rules<br/>user: note"]
     B["Call the LLM"]
     C["Parse JSON + validate with Zod"]
     D{"Valid?"}
     E["Return Injury ✅"]
-    F["Add 2 messages<br/>assistant: wrong answer<br/>user: 'Invalid: error. Fix it.'"]
+    F["Add 2 messages<br/>assistant: wrong answer<br/>user: Invalid, fix it"]
     G["Call the LLM again"]
     H["Parse JSON + validate with Zod"]
     I{"Valid?"}
