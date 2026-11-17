@@ -1,0 +1,29 @@
+{
+  "name": "injury-semantic-search",
+  "version": "1.0.0",
+  "description": "An AI-powered injury tracker that turns messy notes into structured health data and makes your injury history searchable by meaning, not just keywords.",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "start": "tsx --env-file=.env src/index.ts",
+    "typecheck": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sabrahermassi/injury-semantic-search.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/sabrahermassi/injury-semantic-search/issues"
+  },
+  "homepage": "https://github.com/sabrahermassi/injury-semantic-search#readme",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
