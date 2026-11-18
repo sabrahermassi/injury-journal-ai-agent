@@ -46,6 +46,7 @@ class SearchRequest(BaseModel):
     query: str = Field(min_length=1)
     filters: SearchFilters | None = None
     top_k: int = Field(default=5, ge=1, le=50)
+    min_score: float = Field(default=0.53, ge=-1, le=1)
 ```
 
 FastAPI checks the JSON against it **before** your function runs. If it's wrong (an empty query, or `top_k = 0`), the caller gets a `422` and your function never runs.
@@ -67,11 +68,11 @@ FastAPI builds a test page from your request models, for free: http://localhost:
 
 ### The 3 endpoints
 
-| Endpoint        | You send                      | You get back                             | Calls              |
-| --------------- | ----------------------------- | ---------------------------------------- | ------------------ |
-| `POST /extract` | `{ "note": "..." }`           | The 5 fields. Nothing is saved.          | `extract()`        |
-| `POST /index`   | `{ "notes": ["...", "..."] }` | `{ total, added, rebuilt }`              | `index_and_save()` |
-| `POST /search`  | `{ query, filters, top_k }`   | Top notes with `text`, `fields`, `score` | `search()`         |
+| Endpoint        | You send                               | You get back                             | Calls              |
+| --------------- | -------------------------------------- | ---------------------------------------- | ------------------ |
+| `POST /extract` | `{ "note": "..." }`                    | The 5 fields. Nothing is saved.          | `extract()`        |
+| `POST /index`   | `{ "notes": ["...", "..."] }`          | `{ total, added, rebuilt }`              | `index_and_save()` |
+| `POST /search`  | `{ query, filters, top_k, min_score }` | Top notes with `text`, `fields`, `score` | `search()`         |
 
 `app/api.py` is a thin layer: it checks the request and calls the functions from milestones 2 to 5. No AI logic lives there.
 

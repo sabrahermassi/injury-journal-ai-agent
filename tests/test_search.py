@@ -26,7 +26,7 @@ def fake_query_vector(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_ranks_by_meaning() -> None:
-    results = search("knee", RECORDS, MODEL)
+    results = search("knee", RECORDS, MODEL, min_score=0.0)
     assert [result.id for result in results] == ["knee pain running", "left knee sore", "cut finger"]
     assert results[0].score == pytest.approx(1.0)
 
@@ -61,3 +61,14 @@ def test_negative_top_k_is_rejected() -> None:
 
 def test_zero_top_k_returns_empty_list() -> None:
     assert search("knee", RECORDS, MODEL, top_k=0) == []
+
+
+def test_min_score_drops_weak_matches() -> None:
+    # Scores against [1, 0]: knee pain 1.0, left knee about 0.99, cut finger 0.0.
+    results = search("knee", RECORDS, MODEL, min_score=0.5)
+    assert [result.id for result in results] == ["knee pain running", "left knee sore"]
+
+
+def test_only_weak_matches_returns_nothing() -> None:
+    # The only finger note scores 0.0, below the threshold.
+    assert search("knee", RECORDS, MODEL, SearchFilters(body_part="finger"), min_score=0.5) == []

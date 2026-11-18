@@ -60,18 +60,21 @@ flowchart LR
     F["Filter fields"]
     V["Embed search"]
     C["Cosine score"]
+    M["Min score 0.53"]
     T["Top 5 notes"]
 
     Q --> F
     F --> V
     V --> C
-    C --> T
+    C --> M
+    M --> T
 ```
 
 - **Search** plus optional filters, for example `"pain after running"` with `body_part = knee`.
 - **Filter fields** keeps only notes whose extracted fields match.
 - **Embed search** turns the search into a vector (not saved).
 - **Cosine score** compares it with each remaining note's vector.
+- **Min score 0.53** drops weak matches, so an off-topic search returns nothing.
 - **Top 5 notes** are shown with their fields, highest score first.
 
 ## Learn more
@@ -79,6 +82,7 @@ flowchart LR
 - [Structured extraction](docs/structured-extraction.md): the LLM, how `messages` and roles work, and how a messy note becomes validated fields.
 - [Embedding model](docs/embedding-model.md): what vectors are, the rules for using them, how notes are embedded and saved, and cosine similarity.
 - [FastAPI endpoints](docs/fastapi-endpoints.md): the 3 endpoints, the `/docs` test page, and how the lock stops two saves from losing a note.
+- [Score threshold](docs/threshold.md): why search needs a minimum score, and how 0.53 was chosen by experiment.
 
 ## Status
 
@@ -88,7 +92,7 @@ flowchart LR
 - [x] Milestone 4: Cosine similarity with tests
 - [x] Milestone 5: search function (hybrid)
 - [x] Milestone 6: FastAPI endpoints
-- [ ] Milestone 7: threshold experiment
+- [x] Milestone 7: threshold experiment
 - [ ] Milestone 8: React search UI
 
 ## Tech stack
@@ -213,3 +217,4 @@ Open http://localhost:8000/docs to try `POST /extract`, `POST /index` and `POST 
 | `uv run mypy app tests`                                     | Checks types                         |
 | `uv run --env-file .env python -m app.extraction.benchmark` | Runs the extraction benchmark        |
 | `uv run --env-file .env python -m app.embedding.benchmark`  | Runs the embedding benchmark         |
+| `uv run --env-file .env python -m app.embedding.threshold`  | Runs the threshold experiment        |

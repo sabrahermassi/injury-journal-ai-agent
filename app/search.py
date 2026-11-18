@@ -5,6 +5,10 @@ from app.embedding.similarity import cosine_similarity
 from app.extraction.schema import Injury
 from app.store import NoteRecord
 
+# Results scoring below this are not returned. Chosen by the threshold experiment
+# (python -m app.embedding.threshold): lowest injury score 0.55, highest off-topic 0.52.
+MIN_SCORE = 0.53
+
 
 class SearchFilters(BaseModel):
     body_part: str | None = None
@@ -36,6 +40,7 @@ def search(
     embed_model: str,
     filters: SearchFilters | None = None,
     top_k: int = 5,
+    min_score: float = MIN_SCORE,
 ) -> list[SearchResult]:
     """Hybrid search: filter by the extracted fields, then rank by meaning (cosine)."""
     if top_k < 0:
@@ -50,10 +55,13 @@ def search(
     # 2. Embed the question (with the search_query prefix). Not saved.
     query_vector = embed_query(query, embed_model)
 
-    # 3. Score every candidate, 4. sort best first, 5. keep the top k.
+    # 3. Score every candidate and drop the ones below the threshold.
     results = [
         SearchResult(id=record.id, text=record.text, fields=record.fields, score=cosine_similarity(query_vector, record.vector))
         for record in candidates
     ]
+    results = [result for result in results if result.score >= min_score]
+
+    # 4. Sort best first, 5. keep the top k.
     results.sort(key=lambda result: result.score, reverse=True)
     return results[:top_k]
