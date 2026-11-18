@@ -1,4 +1,4 @@
-from app.env import require_env
+from app.core.env import require_env
 
 
 def main() -> None:

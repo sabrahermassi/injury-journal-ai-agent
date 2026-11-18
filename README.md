@@ -23,6 +23,32 @@ flowchart LR
 
 Each box is one service (one running program), all in this repo. They talk to each other over HTTP.
 
+## Projects
+
+This repo grows one project at a time. Each project has its own folder in `app/`, `tests/`, `eval/`, `data/` and `docs/`, and a git tag that shows the repo exactly as it was when the project was finished.
+
+| Project                | Python code              | Docs                     | Tag                                                                                                   |
+| ---------------------- | ------------------------ | ------------------------ | ----------------------------------------------------------------------------------------------------- |
+| 1. Semantic search     | `app/semantic_search/`   | `docs/semantic-search/`  | [p1-semantic-search](https://github.com/sabrahermassi/injury-semantic-search/tree/p1-semantic-search) |
+
+### Folder structure
+
+```
+app/                    Python AI service (one FastAPI app, port 8000)
+  api.py                plugs in each project's router
+  core/                 shared by all projects: settings, LLM call, embeddings, cosine
+  semantic_search/      Project 1: extraction, indexing, search, its router and evaluation
+api/src/                TypeScript API (port 3000)
+  app.ts                plugs in each project's routes
+  semantic-search/      Project 1: routes, Zod schemas, Python client
+web/src/                React app (port 5173)
+  App.tsx               shows each project's page
+  semantic-search/      Project 1: the search page
+tests/core/  tests/semantic_search/  eval/semantic_search/  data/semantic_search/  docs/semantic-search/
+```
+
+Rules: a project only imports from `core/`, never from another project. Python folders use `snake_case`, TypeScript and docs folders use `kebab-case`.
+
 ## How it works
 
 Every RAG app has two flows: **indexing** (saving data) and **querying** (searching it).
@@ -50,7 +76,7 @@ The same note goes to **both** models, side by side:
 
 - **LLM extraction** (structured outputs): `"Twisted my knee running, pain 6"` becomes `{ body_part: "knee", severity: 6, cause: "running" }`, validated with Pydantic. Used for filters, display and charts.
 - **Embeddings**: the note text becomes a vector `[0.12, -0.48, 0.91, ...]`. Used for search by meaning.
-- Both are saved together as one record in `data/notes.json`.
+- Both are saved together as one record in `data/semantic_search/notes.json`.
 
 ### Querying: when you search
 
@@ -79,11 +105,11 @@ flowchart LR
 
 ## Learn more
 
-- [Structured extraction](docs/structured-extraction.md): the LLM, how `messages` and roles work, and how a messy note becomes validated fields.
-- [Embedding model](docs/embedding-model.md): what vectors are, the rules for using them, how notes are embedded and saved, and cosine similarity.
-- [FastAPI endpoints](docs/fastapi-endpoints.md): the 3 endpoints, the `/docs` test page, and how the lock stops two saves from losing a note.
-- [Score threshold](docs/threshold.md): why search needs a minimum score, and how 0.54 was chosen by experiment.
-- [Search UI](docs/search-ui.md): how React, the TS API and Python connect, and what each layer checks.
+- [Structured extraction](docs/semantic-search/structured-extraction.md): the LLM, how `messages` and roles work, and how a messy note becomes validated fields.
+- [Embedding model](docs/semantic-search/embedding-model.md): what vectors are, the rules for using them, how notes are embedded and saved, and cosine similarity.
+- [FastAPI endpoints](docs/semantic-search/fastapi-endpoints.md): the 3 endpoints, the `/docs` test page, and how the lock stops two saves from losing a note.
+- [Score threshold](docs/semantic-search/threshold.md): why search needs a minimum score, and how 0.54 was chosen by experiment.
+- [Search UI](docs/semantic-search/search-ui.md): how React, the TS API and Python connect, and what each layer checks.
 
 ## Status
 
@@ -117,7 +143,7 @@ Models: `qwen2.5:3b` for extraction, `nomic-embed-text` for embeddings (both cho
 
 ## Extraction Model choice
 
-Each model extracted 5 fields from the same 10 labelled test notes (`eval/notes.json`), and `app/extraction/benchmark.py` compared its answers to the expected ones.
+Each model extracted 5 fields from the same 10 labelled test notes (`eval/semantic_search/notes.json`), and `app/semantic_search/evaluation/extraction_benchmark.py` compared its answers to the expected ones.
 
 | Model          | Correct | Failed | Speed         |
 | -------------- | ------- | ------ | ------------- |
@@ -133,12 +159,12 @@ To run the benchmark yourself, pull all 3 models, then run it:
 ollama pull llama3.2
 ollama pull qwen2.5:3b
 ollama pull qwen2.5:7b
-uv run --env-file .env python -m app.extraction.benchmark
+uv run --env-file .env python -m app.semantic_search.evaluation.extraction_benchmark
 ```
 
 ## Embedding model choice
 
-12 test questions (`eval/queries.json`) were searched against the 10 test notes with each model and each text option, using `app/embedding/benchmark.py`. Top-1: the right note came first. Top-3: it was in the first 3.
+12 test questions (`eval/semantic_search/queries.json`) were searched against the 10 test notes with each model and each text option, using `app/semantic_search/evaluation/embedding_benchmark.py`. Top-1: the right note came first. Top-3: it was in the first 3.
 
 | Model                | Text          | Top-1     | Top-3     |
 | -------------------- | ------------- | --------- | --------- |
@@ -150,7 +176,7 @@ uv run --env-file .env python -m app.extraction.benchmark
 
 All options found the right note in the top 3, so the test set is too small to separate them. Chose **nomic-embed-text with the raw note**: same accuracy, small (274 MB), handles long notes, and embedding the raw note keeps search independent of extraction mistakes. To be rerun with real notes.
 
-To run it yourself: `ollama pull mxbai-embed-large`, `ollama pull all-minilm`, then `uv run --env-file .env python -m app.embedding.benchmark`.
+To run it yourself: `ollama pull mxbai-embed-large`, `ollama pull all-minilm`, then `uv run --env-file .env python -m app.semantic_search.evaluation.embedding_benchmark`.
 
 ## Run locally
 
@@ -187,7 +213,7 @@ uv run --env-file .env python -m app.main
 
 ### Index your notes
 
-Create `data/raw_notes.json`: a UTF-8 JSON array of strings, one note each. `data/` is in `.gitignore`, so personal health notes are never committed.
+Create `data/semantic_search/raw_notes.json`: a UTF-8 JSON array of strings, one note each. `data/` is in `.gitignore`, so personal health notes are never committed.
 
 ```json
 ["knee pain after running", "lower back hurts after sitting all day"]
@@ -196,10 +222,10 @@ Create `data/raw_notes.json`: a UTF-8 JSON array of strings, one note each. `dat
 Then run:
 
 ```bash
-uv run --env-file .env python -m app.index
+uv run --env-file .env python -m app.semantic_search.index
 ```
 
-Each note is extracted and embedded, then saved in `data/notes.json`.
+Each note is extracted and embedded, then saved in `data/semantic_search/notes.json`.
 
 ### Start the API
 
@@ -230,13 +256,13 @@ Open http://localhost:5173: search, filter by body part, minimum severity and da
 | Command                                                     | What it does                         |
 | ----------------------------------------------------------- | ------------------------------------ |
 | `uv run --env-file .env python -m app.main`                 | Runs the app                         |
-| `uv run --env-file .env python -m app.index`                | Extracts, embeds and saves new notes |
+| `uv run --env-file .env python -m app.semantic_search.index`                | Extracts, embeds and saves new notes |
 | `uv run --env-file .env fastapi dev app/api.py`             | Starts the API on localhost:8000     |
 | `uv run pytest`                                             | Runs the tests                       |
 | `uv run mypy app tests`                                     | Checks types                         |
-| `uv run --env-file .env python -m app.extraction.benchmark` | Runs the extraction benchmark        |
-| `uv run --env-file .env python -m app.embedding.benchmark`  | Runs the embedding benchmark         |
-| `uv run --env-file .env python -m app.embedding.threshold`  | Runs the threshold experiment        |
+| `uv run --env-file .env python -m app.semantic_search.evaluation.extraction_benchmark` | Runs the extraction benchmark        |
+| `uv run --env-file .env python -m app.semantic_search.evaluation.embedding_benchmark`  | Runs the embedding benchmark         |
+| `uv run --env-file .env python -m app.semantic_search.evaluation.threshold`  | Runs the threshold experiment        |
 | `cd api && npm run dev`                                     | Starts the TS API on localhost:3000  |
 | `cd api && npm test`                                        | Runs the TS API tests                |
 | `cd api && npm run typecheck`                               | Checks the TS API types              |
