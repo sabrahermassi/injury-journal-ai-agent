@@ -20,11 +20,13 @@ def _embed(texts: list[str], model: str) -> list[list[float]]:
     return [list(vector) for vector in response.embeddings]
 
 
+# for notes, when saving
 def embed_documents(texts: list[str], model: str) -> list[list[float]]:
     prefix = _prefixes(model)[0]
     return _embed([prefix + text for text in texts], model)
 
 
+# for a search question, in milestone 5
 def embed_query(text: str, model: str) -> list[float]:
     prefix = _prefixes(model)[1]
     return _embed([prefix + text], model)[0]

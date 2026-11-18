@@ -44,6 +44,25 @@ That's why "running injury" can find "hurt my shin jogging" even though the two 
 3. **Some models need a prefix.** `nomic-embed-text` expects `search_document: ` before notes and `search_query: ` before questions. Without it, results get worse with no error.
 4. **You can't turn a vector back into text.** Always keep the original note.
 
+### Settings we use
+
+```python
+client.embed(
+    model="nomic-embed-text",                       # which embedding model
+    input=["search_document: knee pain 5/10", ...], # one or more texts, with the prefix
+)
+# response.embeddings → one vector per text, in the same order
+```
+
+Compared with `client.chat`:
+
+| `client.chat` (LLM)                       | `client.embed` (embedding model)                                     |
+| ----------------------------------------- | -------------------------------------------------------------------- |
+| `messages`: a conversation with roles     | `input`: just a list of texts, no roles                              |
+| `format="json"`, `temperature=0`          | No format or temperature: the same text always gives the same vector |
+| Returns text (`response.message.content`) | Returns vectors (`response.embeddings`)                              |
+| One conversation per call                 | Many texts per call (batching), which is faster                      |
+
 ## Part 2: How our embedding works
 
 ### Saving notes (indexing)
