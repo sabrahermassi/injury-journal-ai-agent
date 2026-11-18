@@ -159,7 +159,7 @@ flowchart LR
 - **Filter fields**: keep only notes whose extracted fields pass the filters (`body_part`, `min_severity`). This is the extraction side. If no note passes, it returns an empty list straight away, with no model call.
 - **Embed query**: the question gets the `search_query: ` prefix. The vector is not saved.
 - **Cosine score**: each remaining note's vector is compared with the question's vector. This is the embedding side.
-- **Min score**: results below 0.53 are dropped, so an off-topic search returns nothing (see [threshold.md](threshold.md)).
+- **Min score**: results below 0.54 are dropped, so an off-topic search returns nothing (see [threshold.md](threshold.md)).
 - **Top 5 notes**: sorted from highest score to lowest, returned with their text, fields and score (no vector).
 
 ### The files

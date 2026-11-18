@@ -8,8 +8,8 @@ from app.extraction.schema import Injury
 from app.store import NoteRecord
 
 # Results scoring below this are not returned. Chosen by the threshold experiment
-# (python -m app.embedding.threshold): lowest injury score 0.55, highest off-topic 0.52.
-MIN_SCORE = 0.53
+# (python -m app.embedding.threshold): keeps all 12 injury questions, blocks 23 of 28 off-topic.
+MIN_SCORE = 0.54
 
 
 class SearchFilters(BaseModel):

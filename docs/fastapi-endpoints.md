@@ -46,7 +46,7 @@ class SearchRequest(BaseModel):
     query: str = Field(min_length=1)
     filters: SearchFilters | None = None
     top_k: int = Field(default=5, ge=1, le=50)
-    min_score: float = Field(default=0.53, ge=-1, le=1)
+    min_score: float = Field(default=0.54, ge=-1, le=1)
 ```
 
 FastAPI checks the JSON against it **before** your function runs. If it's wrong (an empty query, or `top_k = 0`), the caller gets a `422` and your function never runs.

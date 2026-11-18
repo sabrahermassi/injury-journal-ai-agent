@@ -26,7 +26,7 @@ flowchart LR
 - **React page**: you type a search and set filters. It sends `POST /api/search` with `{ query, filters }`.
 - **Vite proxy**: in development, Vite forwards every `/api/...` call to port 3000. The browser only talks to one address, so there's no CORS setup.
 - **TS API**: checks the request with Zod, calls Python's `POST /search`, checks Python's answer with Zod, and returns it.
-- **Python AI**: filters by fields, embeds the question, scores with cosine, applies the 0.53 threshold, and keeps the top 5.
+- **Python AI**: filters by fields, embeds the question, scores with cosine, applies the 0.54 threshold, and keeps the top 5.
 - **Ollama**: runs the embedding model for the question.
 
 ## Both models on one page
