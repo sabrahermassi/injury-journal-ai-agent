@@ -17,14 +17,18 @@ function App() {
 
   const [results, setResults] = useState<SearchResult[] | null>(null); // null = no search yet
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  // Two separate errors: a failed dropdown load must not hide or replace search results.
+  const [bodyPartsError, setBodyPartsError] = useState("");
+  const [searchError, setSearchError] = useState("");
 
   // Fill the body part dropdown once, when the page opens.
   useEffect(() => {
     fetchBodyParts()
       .then(setBodyParts)
       .catch(() =>
-        setError("Could not reach the API. Are all 3 services running?"),
+        setBodyPartsError(
+          'Could not load the body parts, so the dropdown only has "Any". Search still works.',
+        ),
       );
   }, []);
 
@@ -40,11 +44,11 @@ function App() {
     if (dateTo) filters.date_to = dateTo;
 
     setLoading(true);
-    setError("");
+    setSearchError("");
     try {
       setResults(await searchNotes(query, filters));
     } catch {
-      setError("Search failed. Are all 3 services running?");
+      setSearchError("Search failed. Are all 3 services running?");
     } finally {
       setLoading(false);
     }
@@ -118,7 +122,8 @@ function App() {
         </div>
       </form>
 
-      {error && <p className="error">{error}</p>}
+      {bodyPartsError && <p className="error">{bodyPartsError}</p>}
+      {searchError && <p className="error">{searchError}</p>}
 
       {results !== null && results.length === 0 && (
         <p className="empty">No matching notes.</p>
