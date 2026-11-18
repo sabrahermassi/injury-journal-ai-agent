@@ -12,8 +12,9 @@ const testCases: TestCase[] = JSON.parse(
 
 function isMatch(actual: unknown, expected: unknown): boolean {
   if (typeof actual === "string" && typeof expected === "string") {
-    const actualText = actual.toLowerCase();
-    const expectedText = expected.toLowerCase();
+    const actualText = actual.trim().toLowerCase();
+    const expectedText = expected.trim().toLowerCase();
+    if (actualText === "" || expectedText === "") return false;
     return (
       actualText.includes(expectedText) || expectedText.includes(actualText)
     );
