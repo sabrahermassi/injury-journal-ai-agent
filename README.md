@@ -84,25 +84,25 @@ flowchart LR
 - [x] Milestone 1: Project skeleton (Python)
 - [x] Milestone 2: Structured extraction (Python)
 - [x] Milestone 3: Embed and persist
-- [ ] Milestone 4: Cosine similarity with tests
-- [ ] Milestone 5: CLI search (hybrid)
-- [ ] Milestone 6: Threshold experiment
-- [ ] Milestone 7: FastAPI endpoints
+- [x] Milestone 4: Cosine similarity with tests
+- [x] Milestone 5: search function (hybrid)
+- [ ] Milestone 6: FastAPI endpoints
+- [ ] Milestone 7: threshold experiment
 - [ ] Milestone 8: React search UI
 
 ## Tech stack
 
-| Tool         | Why                                                 |
-| ------------ | --------------------------------------------------- |
-| Python 3.12+ | The AI service                                      |
-| uv           | Virtual environment and packages (like npm)         |
-| Pydantic     | Validates the LLM's JSON output (like Zod)          |
-| pytest       | Tests                                               |
-| mypy         | Checks type hints (like tsc)                        |
-| Ollama       | Runs the models locally, free                       |
-| FastAPI      | HTTP endpoints for the TypeScript API (milestone 7) |
+| Tool         | Why                                         |
+| ------------ | ------------------------------------------- |
+| Python 3.12+ | The AI service                              |
+| uv           | Virtual environment and packages (like npm) |
+| Pydantic     | Validates the LLM's JSON output (like Zod)  |
+| pytest       | Tests                                       |
+| mypy         | Checks type hints (like tsc)                |
+| Ollama       | Runs the models locally, free               |
+| FastAPI      | HTTP endpoints for the TypeScript API       |
 
-Models: `qwen2.5:3b` for extraction, `nomic-embed-text` for embeddings (to be confirmed by the benchmark in milestone 4).
+Models: `qwen2.5:3b` for extraction, `nomic-embed-text` for embeddings (both chosen by benchmark).
 
 ## Extraction Model choice
 
@@ -197,3 +197,4 @@ Each note is extracted and embedded, then saved in `data/notes.json`.
 | `uv run pytest`                                             | Runs the tests                       |
 | `uv run mypy app tests`                                     | Checks types                         |
 | `uv run --env-file .env python -m app.extraction.benchmark` | Runs the extraction benchmark        |
+| `uv run --env-file .env python -m app.embedding.benchmark`  | Runs the embedding benchmark         |

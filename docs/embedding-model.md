@@ -1,11 +1,11 @@
 # Embedding model
 
-|                    |                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------- |
-| **Model**          | `nomic-embed-text` (via Ollama), to be confirmed by the benchmark in milestone 4 |
-| **Type**           | Embedding model (not generative: it never writes text)                           |
-| **What it does**   | Text in, vector out (a list of numbers)                                          |
-| **Why we need it** | Lets the app find notes **by meaning**, not by exact words (semantic search)     |
+|                    |                                                                              |
+| ------------------ | ---------------------------------------------------------------------------- |
+| **Model**          | `nomic-embed-text` (via Ollama), chosen by benchmark in milestone 4          |
+| **Type**           | Embedding model (not generative: it never writes text)                       |
+| **What it does**   | Text in, vector out (a list of numbers)                                      |
+| **Why we need it** | Lets the app find notes **by meaning**, not by exact words (semantic search) |
 
 ## Part 1: How embedding models work (the general idea)
 
@@ -138,32 +138,43 @@ flowchart TB
 - **Extract fields**: the LLM, one note at a time.
 - **notes.json**: one record per note: `{ id, text, fields, vector, embed_model }`.
 
+### Searching (hybrid)
+
+`search(query, records, embed_model, filters)` in `app/search.py` uses the results of **both** models:
+
+```mermaid
+flowchart LR
+    Q["Search"]
+    F["Filter fields"]
+    E["Embed query"]
+    C["Cosine score"]
+    T["Top 5 notes"]
+
+    Q --> F
+    F --> E
+    E --> C
+    C --> T
+```
+
+- **Filter fields**: keep only notes whose extracted fields pass the filters (`body_part`, `min_severity`). This is the extraction side. If no note passes, it returns an empty list straight away, with no model call.
+- **Embed query**: the question gets the `search_query: ` prefix. The vector is not saved.
+- **Cosine score**: each remaining note's vector is compared with the question's vector. This is the embedding side.
+- **Top 5 notes**: sorted from highest score to lowest, returned with their text, fields and score (no vector).
+
 ### The files
 
 | File                          | Job                                                                                   |
 | ----------------------------- | ------------------------------------------------------------------------------------- |
 | `app/embedding/embed.py`      | `embed_documents` (notes) and `embed_query` (search questions), with the right prefix |
+| `app/embedding/similarity.py` | `cosine_similarity`: how similar two vectors are (−1 to 1)                            |
+| `app/embedding/benchmark.py`  | Compares embedding models and text options on test questions                          |
 | `app/store.py`                | `NoteRecord`, plus `load` and `save` for `data/notes.json`                            |
 | `app/index.py`                | The pipeline: skip, embed, extract, save                                              |
-| `app/embedding/similarity.py` | `cosine_similarity`: how similar two vectors are (−1 to 1)                            |
+| `app/search.py`               | `search()`: hybrid search, filter by fields then rank by cosine, top 5                |
 
-### Searching (coming in milestones 4 and 5)
+### How the model was chosen
 
-```mermaid
-flowchart LR
-    Q["Question"]
-    E["Embed query"]
-    C["Cosine score"]
-    T["Top 5 notes"]
-
-    Q --> E
-    E --> C
-    C --> T
-```
-
-- **Embed query**: with `search_query: `. The vector is not saved.
-- **Cosine score**: compared with every saved vector (milestone 4).
-- **Top 5 notes**: highest score first (milestone 5).
+`app/embedding/benchmark.py` searched 12 test questions (`eval/queries.json`) against the 10 test notes, with 3 models (nomic-embed-text, mxbai-embed-large, all-minilm) and 3 text options (raw note, extracted fields, both). Every combination found the right note in the top 3 for all 12 questions, so the test set is too small to separate them. We kept **nomic-embed-text with the raw note**: small, handles long notes, and keeps search independent of extraction mistakes. To be rerun with real notes.
 
 ## Cosine similarity
 
@@ -219,7 +230,7 @@ cosine = 10 / (2.236 × 4.472) = 1.0     ← b is just a longer copy of a: same 
 
 ### In our code
 
-`cosine_similarity(a, b)` in `app/embedding/similarity.py`, written by hand without a library, and tested in `tests/test_similarity.py`:
+`cosine_similarity(a, b)` in `app/embedding/similarity.py`, without a library, and tested in `tests/test_similarity.py`:
 
 | Test                           | Checks                   |
 | ------------------------------ | ------------------------ |
@@ -229,7 +240,7 @@ cosine = 10 / (2.236 × 4.472) = 1.0     ← b is just a longer copy of a: same 
 | scaled vector                  | still 1 (direction only) |
 | different lengths, zero vector | raise `ValueError`       |
 
-### How search uses it (milestone 5)
+### How search uses it
 
 ```mermaid
 flowchart LR
