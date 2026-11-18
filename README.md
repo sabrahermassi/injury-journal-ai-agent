@@ -70,7 +70,7 @@ Every RAG app has two flows: **indexing** (saving data) and **querying** (search
 ## Status
 
 - [x] Milestone 1: Project skeleton (Python)
-- [x] Milestone 2: Structured extraction (rewriting in Python)
+- [x] Milestone 2: Structured extraction (Python)
 - [ ] Milestone 3: Embed and persist
 - [ ] Milestone 4: Cosine similarity with tests
 - [ ] Milestone 5: CLI search
@@ -106,11 +106,12 @@ Chose **qwen2.5:3b**: only 1 field fewer than the 7B model (43 vs 44 out of 50),
 
 To run the benchmark yourself, pull all 3 models, then run it:
 
-````bash
+```bash
 ollama pull llama3.2
 ollama pull qwen2.5:3b
 ollama pull qwen2.5:7b
 uv run --env-file .env python -m app.benchmark
+```
 
 ## Run locally
 
@@ -121,7 +122,7 @@ git clone https://github.com/sabrahermassi/injury-semantic-search.git
 cd injury-semantic-search
 uv sync
 ollama pull qwen2.5:3b
-````
+```
 
 Create a `.env` file in the project root:
 
