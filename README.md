@@ -130,6 +130,7 @@ git clone https://github.com/sabrahermassi/injury-semantic-search.git
 cd injury-semantic-search
 uv sync
 ollama pull qwen2.5:3b
+ollama pull nomic-embed-text
 ```
 
 Create a `.env` file in the project root:
@@ -138,16 +139,34 @@ Create a `.env` file in the project root:
 APP_NAME=injury-semantic-search
 OLLAMA_URL=http://localhost:11434
 LLM_MODEL=qwen2.5:3b
+EMBED_MODEL=nomic-embed-text
 ```
 
 - `OLLAMA_URL`: where Ollama runs (default port 11434).
 - `LLM_MODEL`: the model used for extraction.
+- `EMBED_MODEL`: the model used for embeddings.
 
 Run the app (always with `-m`, from the project root):
 
 ```bash
 uv run --env-file .env python -m app.main
 ```
+
+### Index your notes
+
+Create `data/raw_notes.json`: a UTF-8 JSON array of strings, one note each. `data/` is in `.gitignore`, so personal health notes are never committed.
+
+```json
+["knee pain after running", "lower back hurts after sitting all day"]
+```
+
+Then run:
+
+```bash
+uv run --env-file .env python -m app.index
+```
+
+Each note is extracted and embedded, then saved in `data/notes.json`.
 
 ## Commands
 

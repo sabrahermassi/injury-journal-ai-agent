@@ -26,9 +26,15 @@ def note_id(text: str) -> str:
 def load(path: Path = STORE_PATH) -> list[NoteRecord]:
     if not path.exists():
         return []
-    return RecordList.validate_json(path.read_text())
+    return RecordList.validate_json(path.read_text(encoding="utf-8"))
 
 
 def save(records: list[NoteRecord], path: Path = STORE_PATH) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(RecordList.dump_json(records, indent=2))
+    temp_path = path.with_name(path.name + ".tmp")
+    try:
+        temp_path.write_bytes(RecordList.dump_json(records, indent=2))
+        temp_path.replace(path)
+    except BaseException:
+        temp_path.unlink(missing_ok=True)
+        raise

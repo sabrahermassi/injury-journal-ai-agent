@@ -48,3 +48,25 @@ def test_save_and_load_round_trip(tmp_path: Path) -> None:
     path = tmp_path / "notes.json"
     save([record], path)
     assert load(path) == [record]
+    assert not (tmp_path / "notes.json.tmp").exists()
+
+
+def test_duplicate_notes_with_different_spaces_are_saved_once(fakes: list[list[str]]) -> None:
+    records = index_notes(["knee pain", " knee pain "], [], "nomic-embed-text")
+    assert len(records) == 1
+
+
+def test_model_change_reuses_saved_fields_without_extracting(
+    fakes: list[list[str]], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = index_notes(["knee pain 5/10"], [], "nomic-embed-text")
+
+    def must_not_extract(text: str) -> Injury:
+        raise AssertionError("extract must not run for notes that are already saved")
+
+    monkeypatch.setattr("app.index.extract", must_not_extract)
+    second = index_notes(["knee pain 5/10"], first, "all-minilm")
+
+    assert len(second) == 1
+    assert second[0].embed_model == "all-minilm"
+    assert second[0].fields == first[0].fields

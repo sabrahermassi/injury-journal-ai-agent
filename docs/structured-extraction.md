@@ -72,7 +72,7 @@ client.chat(
     model="qwen2.5:3b",          # which model answers
     messages=messages,           # the script
     format="json",               # force a JSON reply
-    options={"temperature": 0},  # same answer every time, no creativity
+    options={"temperature": 0},  # least random: picks the most likely words (not a guarantee of identical replies)
 )
 ```
 

@@ -49,7 +49,7 @@ That's why "running injury" can find "hurt my shin jogging" even though the two 
 ```python
 client.embed(
     model="nomic-embed-text",                       # which embedding model
-    input=["search_document: knee pain 5/10", ...], # one or more texts, with the prefix
+    input=["search_document: knee pain 5/10", "search_document: sore neck"],  # one or more texts, with the prefix
 )
 # response.embeddings → one vector per text, in the same order
 ```
@@ -85,7 +85,17 @@ The same note goes to both models, side by side:
                Save note + fields + vector in data/notes.json
 ```
 
-Run it with `uv run --env-file .env python -m app.index`.
+First create `data/raw_notes.json`: a UTF-8 JSON array of strings, one note each. `data/` is in `.gitignore`, so it isn't in the repo.
+
+```json
+["knee pain after running", "lower back hurts after sitting all day"]
+```
+
+Then run:
+
+```bash
+uv run --env-file .env python -m app.index
+```
 
 ```text
 data/raw_notes.json
