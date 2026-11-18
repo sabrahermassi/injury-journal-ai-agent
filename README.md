@@ -62,7 +62,10 @@ Every RAG app has two flows: **indexing** (saving data) and **querying** (search
 4. Show the 5 closest notes with their fields
 ```
 
-Details: [Structured extraction](docs/extraction.md)
+## Learn more
+
+- [Structured extraction](docs/extraction.md): how a messy note becomes a validated `Injury` object, including the retry.
+- [How we talk to LLMs](docs/llm-messages.md): what `messages` are, the `system` / `user` / `assistant` roles, and why the model needs the whole conversation on every call.
 
 ## Status
 
