@@ -4,84 +4,88 @@ Search my injury notes by meaning, not just keywords.
 
 ## Architecture
 
-```text
-          You write a messy note: "Twisted my knee running, pain 6"
-                     │                              │
-                     ▼                              ▼
-       LLM extracts the fields          Embedding model turns the
-       (structured outputs)             note text into a vector
-       { body_part: "knee",             [0.12, -0.48, 0.91, ...]
-         severity: 6,                   for search by meaning
-         cause: "running" }
-       for showing, filtering, charts
-                     │                              │
-                     └──────────────┬───────────────┘
-                                    ▼
-               Save note + fields + vector in notes.json
+```mermaid
+flowchart LR
+    UI["React UI"]
+    API["TS API"]
+    AI["Python AI"]
+    OL["Ollama"]
+
+    UI -->|public endpoints| API
+    API -->|internal endpoints| AI
+    AI --> OL
+```
+
+- **React UI** (TypeScript): the UI, localhost:5173
+- **TS API** (TypeScript): login, notes, database, validated with Zod, localhost:3000
+- **Python AI** (Python): extract, embed, search, validated with Pydantic, localhost:8000. **This repo.**
+- **Ollama**: runs the models locally, localhost:11434
+
+Each box is one service (one running program). They talk to each other over HTTP.
+
+## How it works
+
+Every RAG app has two flows: **indexing** (saving data) and **querying** (searching it).
+
+### Indexing: when you save a note
+
+```mermaid
+flowchart TB
+    N["Messy note"]
+
+    subgraph BOTH["SIDE BY SIDE"]
+        E["LLM extraction"]
+        V["Embeddings"]
+    end
+
+    S["notes.json"]
+
+    N --> E
+    N --> V
+    E -->|fields| S
+    V -->|vector| S
 ```
 
 The same note goes to **both** models, side by side:
 
-- **Fields** (`{ body_part: "knee", severity: 6 }`) are for showing, filtering and charts.
-- **Vector** (`[0.12, -0.48, ...]`) is for search by meaning.
-
-```text
-React ──► TS API endpoints ──► Python endpoints ──► Ollama
-          (public)             (internal)
-```
-
-Each box is one service (one running program). They talk to each other over HTTP. This repo is the Python AI service.
-
-## How it works
-
-Every RAG app has two flows: **indexing** (saving data) and **querying** (searching it). The extract step uses **structured outputs**: the LLM returns JSON in a fixed shape, validated with Pydantic.
-
-### Indexing: when you save a note
-
-```text
-1. You write a messy note
-   "Twisted my knee running, pain 6"
-        │
-        ▼
-2. The LLM extracts the fields (structured outputs)
-   { body_part: "knee", severity: 6, cause: "running" }
-        │
-        ▼
-3. The embedding model turns the note into a vector
-   [0.12, -0.48, 0.91, ...]
-        │
-        ▼
-4. Save note + fields + vector in notes.json
-```
+- **LLM extraction** (structured outputs): `"Twisted my knee running, pain 6"` becomes `{ body_part: "knee", severity: 6, cause: "running" }`, validated with Pydantic. Used for filters, display and charts.
+- **Embeddings**: the note text becomes a vector `[0.12, -0.48, 0.91, ...]`. Used for search by meaning.
+- Both are saved together as one record in `data/notes.json`.
 
 ### Querying: when you search
 
-```text
-1. You type a search
-   "knee pain after running"
-        │
-        ▼
-2. The embedding model turns your search into a vector
-        │
-        ▼
-3. Compare it with every saved vector (cosine score, 0 to 1)
-        │
-        ▼
-4. Show the 5 closest notes with their fields
+```mermaid
+flowchart LR
+    Q["Search"]
+    F["Filter fields"]
+    V["Embed search"]
+    C["Cosine score"]
+    T["Top 5 notes"]
+
+    Q --> F
+    F --> V
+    V --> C
+    C --> T
 ```
+
+- **Search** plus optional filters, for example `"pain after running"` with `body_part = knee`.
+- **Filter fields** keeps only notes whose extracted fields match.
+- **Embed search** turns the search into a vector (not saved).
+- **Cosine score** compares it with each remaining note's vector.
+- **Top 5 notes** are shown with their fields, highest score first.
 
 ## Learn more
 
 - [Structured extraction](docs/structured-extraction.md): the LLM, how `messages` and roles work, and how a messy note becomes validated fields.
-- [Embedding model](docs/embedding-model.md): what vectors are, the rules for using them, and how notes are embedded and saved.
+- [Embedding model](docs/embedding-model.md): what vectors are, the rules for using them, how notes are embedded and saved, and cosine similarity.
 
 ## Status
 
 - [x] Milestone 1: Project skeleton (Python)
 - [x] Milestone 2: Structured extraction (Python)
-- [ ] Milestone 3: Embed and persist
+- [x] Milestone 3: Embed and persist
 - [ ] Milestone 4: Cosine similarity with tests
-- [ ] Milestone 5: CLI search
+- [ ] Milestone 5: CLI search (hybrid)
 - [ ] Milestone 6: Threshold experiment
 - [ ] Milestone 7: FastAPI endpoints
 - [ ] Milestone 8: React search UI
@@ -95,14 +99,14 @@ Every RAG app has two flows: **indexing** (saving data) and **querying** (search
 | Pydantic     | Validates the LLM's JSON output (like Zod)          |
 | pytest       | Tests                                               |
 | mypy         | Checks type hints (like tsc)                        |
-| Ollama       | Runs the LLM locally, free                          |
+| Ollama       | Runs the models locally, free                       |
 | FastAPI      | HTTP endpoints for the TypeScript API (milestone 7) |
 
-Embedding model: chosen in milestone 3 by benchmarking.
+Models: `qwen2.5:3b` for extraction, `nomic-embed-text` for embeddings (to be confirmed by the benchmark in milestone 4).
 
-## Model choice
+## Extraction Model choice
 
-Each model extracted 5 fields from the same 10 labelled test notes (`eval/notes.json`), and `app/benchmark.py` compared its answers to the expected ones.
+Each model extracted 5 fields from the same 10 labelled test notes (`eval/notes.json`), and `app/extraction/benchmark.py` compared its answers to the expected ones.
 
 | Model          | Correct | Failed | Speed         |
 | -------------- | ------- | ------ | ------------- |
@@ -118,8 +122,24 @@ To run the benchmark yourself, pull all 3 models, then run it:
 ollama pull llama3.2
 ollama pull qwen2.5:3b
 ollama pull qwen2.5:7b
-uv run --env-file .env python -m app.benchmark
+uv run --env-file .env python -m app.extraction.benchmark
 ```
+
+## Embedding model choice
+
+12 test questions (`eval/queries.json`) were searched against the 10 test notes with each model and each text option, using `app/embedding/benchmark.py`. Top-1: the right note came first. Top-3: it was in the first 3.
+
+| Model                | Text          | Top-1     | Top-3     |
+| -------------------- | ------------- | --------- | --------- |
+| **nomic-embed-text** | **raw**       | **11/12** | **12/12** |
+| nomic-embed-text     | both          | 12/12     | 12/12     |
+| mxbai-embed-large    | all 3         | 12/12     | 12/12     |
+| all-minilm           | raw           | 11/12     | 12/12     |
+| all-minilm           | fields / both | 12/12     | 12/12     |
+
+All options found the right note in the top 3, so the test set is too small to separate them. Chose **nomic-embed-text with the raw note**: same accuracy, small (274 MB), handles long notes, and embedding the raw note keeps search independent of extraction mistakes. To be rerun with real notes.
+
+To run it yourself: `ollama pull mxbai-embed-large`, `ollama pull all-minilm`, then `uv run --env-file .env python -m app.embedding.benchmark`.
 
 ## Run locally
 
@@ -170,9 +190,10 @@ Each note is extracted and embedded, then saved in `data/notes.json`.
 
 ## Commands
 
-| Command                                          | What it does       |
-| ------------------------------------------------ | ------------------ |
-| `uv run --env-file .env python -m app.main`      | Runs the app       |
-| `uv run pytest`                                  | Runs the tests     |
-| `uv run mypy app tests`                          | Checks types       |
-| `uv run --env-file .env python -m app.benchmark` | Runs the benchmark |
+| Command                                                     | What it does                         |
+| ----------------------------------------------------------- | ------------------------------------ |
+| `uv run --env-file .env python -m app.main`                 | Runs the app                         |
+| `uv run --env-file .env python -m app.index`                | Extracts, embeds and saves new notes |
+| `uv run pytest`                                             | Runs the tests                       |
+| `uv run mypy app tests`                                     | Checks types                         |
+| `uv run --env-file .env python -m app.extraction.benchmark` | Runs the extraction benchmark        |
