@@ -41,6 +41,13 @@ def index_endpoint(request: IndexRequest) -> IndexSummary:
     return index_and_save(request.notes, require_env("EMBED_MODEL"))
 
 
+@app.get("/body-parts")
+def body_parts_endpoint() -> list[str]:
+    """Every body part in the saved notes, for the UI's dropdown."""
+    parts = {record.fields.body_part.lower() for record in load() if record.fields.body_part}
+    return sorted(parts)
+
+
 @app.post("/search")
 def search_endpoint(request: SearchRequest) -> list[SearchResult]:
     """Hybrid search: filter by fields, then rank by meaning."""

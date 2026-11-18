@@ -26,3 +26,6 @@ dist/
 
 # Personal health notes and generated vectors: never commit
 data/
+
+# Node
+node_modules/

@@ -1,3 +1,4 @@
+from datetime import date
 import pytest
 
 from app.extraction.schema import Injury
@@ -72,3 +73,21 @@ def test_min_score_drops_weak_matches() -> None:
 def test_only_weak_matches_returns_nothing() -> None:
     # The only finger note scores 0.0, below the threshold.
     assert search("knee", RECORDS, MODEL, SearchFilters(body_part="finger"), min_score=0.5) == []
+
+
+def dated(text: str, note_date: str | None) -> NoteRecord:
+    fields = Injury(injury=text, body_part="knee", severity=5, cause=None, date=note_date)
+    return NoteRecord(id=text, text=text, fields=fields, vector=[1.0, 0.0], embed_model=MODEL)
+
+
+DATED = [dated("october", "2026-10-15"), dated("november", "2026-11-02"), dated("no date", None)]
+
+
+def test_date_range_keeps_notes_inside_it() -> None:
+    filters = SearchFilters(date_from=date(2026, 11, 1), date_to=date(2026, 11, 30))
+    assert [result.id for result in search("knee", DATED, MODEL, filters)] == ["november"]
+
+
+def test_date_filter_skips_notes_without_a_date() -> None:
+    filters = SearchFilters(date_from=date(2026, 1, 1))
+    assert sorted(result.id for result in search("knee", DATED, MODEL, filters)) == ["november", "october"]

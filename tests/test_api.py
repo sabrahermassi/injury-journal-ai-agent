@@ -39,3 +39,8 @@ def test_index_then_search() -> None:
     response = client.post("/search", json={"query": "knee", "filters": {"body_part": "knee"}, "top_k": 1})
     assert response.status_code == 200
     assert len(response.json()) == 1
+
+
+def test_body_parts_lists_each_part_once() -> None:
+    client.post("/index", json={"notes": ["knee pain 5/10", "sore knee again"]})
+    assert client.get("/body-parts").json() == ["knee"]
