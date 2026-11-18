@@ -64,6 +64,18 @@ Details: [Structured extraction](docs/extraction.md)
 
 LLM and embedding models: chosen in milestone 2 by benchmarking (local Ollama, free).
 
+## Model choice
+
+Each model extracted 5 fields from the same 10 labelled test notes (`eval/notes.json`), and `src/eval.ts` compared its answers to the expected ones. Run it with `npx tsx --env-file=.env src/eval.ts`.
+
+| Model          | Correct | Failed | Speed         |
+| -------------- | ------- | ------ | ------------- |
+| llama3.2       | 78%     | 0      | 1.2s/note     |
+| **qwen2.5:3b** | **88%** | **0**  | **1.7s/note** |
+| qwen2.5:7b     | 88%     | 0      | 2.4s/note     |
+
+Chose **qwen2.5:3b**: same accuracy as the 7B model, faster and smaller.
+
 ## Run locally
 
 Requires Node.js 20+.
