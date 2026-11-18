@@ -1,0 +1,14 @@
+[
+  { "query": "sprained ankle during a match", "relevant": [0] },
+  { "query": "back ache from desk work", "relevant": [1] },
+  { "query": "joint pain after a long run", "relevant": [2] },
+  { "query": "gym injury lifting weights", "relevant": [3] },
+  { "query": "kitchen accident with a knife", "relevant": [4] },
+  { "query": "woke up with a stiff neck", "relevant": [5] },
+  { "query": "cycling crash", "relevant": [6] },
+  { "query": "pain from using the keyboard", "relevant": [7] },
+  { "query": "pulled muscle while sprinting", "relevant": [8] },
+  { "query": "my head hurts", "relevant": [9] },
+  { "query": "leg injury from running", "relevant": [2, 8] },
+  { "query": "hurt while playing a sport", "relevant": [0, 8] }
+]

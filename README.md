@@ -104,7 +104,7 @@ flowchart LR
 
 Models: `qwen2.5:3b` for extraction, `nomic-embed-text` for embeddings (to be confirmed by the benchmark in milestone 4).
 
-## Model choice
+## Extraction Model choice
 
 Each model extracted 5 fields from the same 10 labelled test notes (`eval/notes.json`), and `app/extraction/benchmark.py` compared its answers to the expected ones.
 
@@ -124,6 +124,22 @@ ollama pull qwen2.5:3b
 ollama pull qwen2.5:7b
 uv run --env-file .env python -m app.extraction.benchmark
 ```
+
+## Embedding model choice
+
+12 test questions (`eval/queries.json`) were searched against the 10 test notes with each model and each text option, using `app/embedding/benchmark.py`. Top-1: the right note came first. Top-3: it was in the first 3.
+
+| Model                | Text          | Top-1     | Top-3     |
+| -------------------- | ------------- | --------- | --------- |
+| **nomic-embed-text** | **raw**       | **11/12** | **12/12** |
+| nomic-embed-text     | both          | 12/12     | 12/12     |
+| mxbai-embed-large    | all 3         | 12/12     | 12/12     |
+| all-minilm           | raw           | 11/12     | 12/12     |
+| all-minilm           | fields / both | 12/12     | 12/12     |
+
+All options found the right note in the top 3, so the test set is too small to separate them. Chose **nomic-embed-text with the raw note**: same accuracy, small (274 MB), handles long notes, and embedding the raw note keeps search independent of extraction mistakes. To be rerun with real notes.
+
+To run it yourself: `ollama pull mxbai-embed-large`, `ollama pull all-minilm`, then `uv run --env-file .env python -m app.embedding.benchmark`.
 
 ## Run locally
 
