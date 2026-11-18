@@ -62,12 +62,15 @@ Every RAG app has two flows: **indexing** (saving data) and **querying** (search
 4. Show the 5 closest notes with their fields
 ```
 
-Details: [Structured extraction](docs/extraction.md)
+## Learn more
+
+- [Structured extraction](docs/extraction.md): how a messy note becomes a validated `Injury` object, including the retry.
+- [How we talk to LLMs](docs/llm-messages.md): what `messages` are, the `system` / `user` / `assistant` roles, and why the model needs the whole conversation on every call.
 
 ## Status
 
 - [x] Milestone 1: Project skeleton (Python)
-- [ ] Milestone 2: Structured extraction (rewriting in Python)
+- [x] Milestone 2: Structured extraction (Python)
 - [ ] Milestone 3: Embed and persist
 - [ ] Milestone 4: Cosine similarity with tests
 - [ ] Milestone 5: CLI search
@@ -91,17 +94,15 @@ Embedding model: chosen in milestone 3 by benchmarking.
 
 ## Model choice
 
-Each model extracted 5 fields from the same 10 labelled test notes (`eval/notes.json`), and the benchmark compared its answers to the expected ones.
+Each model extracted 5 fields from the same 10 labelled test notes (`eval/notes.json`), and `app/benchmark.py` compared its answers to the expected ones.
 
 | Model          | Correct | Failed | Speed         |
 | -------------- | ------- | ------ | ------------- |
-| llama3.2       | 78%     | 0      | 1.1s/note     |
-| **qwen2.5:3b** | **88%** | **0**  | **1.1s/note** |
-| qwen2.5:7b     | 88%     | 0      | 2.3s/note     |
+| llama3.2       | 78%     | 0      | 1.2s/note     |
+| **qwen2.5:3b** | **86%** | **0**  | **1.2s/note** |
+| qwen2.5:7b     | 88%     | 0      | 2.4s/note     |
 
-Chose **qwen2.5:3b**: same accuracy as the 7B model, as fast as llama3.2, and smaller.
-
-These results come from the first TypeScript version. They will be rerun after the Python rewrite.
+Chose **qwen2.5:3b**: only 1 field fewer than the 7B model (43 vs 44 out of 50), twice as fast, and smaller.
 
 To run the benchmark yourself, pull all 3 models, then run it:
 

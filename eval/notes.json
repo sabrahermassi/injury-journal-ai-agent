@@ -3,7 +3,7 @@
     "note": "Twisted my left ankle playing football yesterday, pain about 7",
     "expected": {
       "injury": "twisted ankle",
-      "bodyPart": "ankle",
+      "body_part": "ankle",
       "severity": 7,
       "cause": "football",
       "date": null
@@ -13,7 +13,7 @@
     "note": "lower back hurts after sitting all day at work",
     "expected": {
       "injury": "back pain",
-      "bodyPart": "lower back",
+      "body_part": "lower back",
       "severity": null,
       "cause": "sitting",
       "date": null
@@ -23,7 +23,7 @@
     "note": "2026-11-02 knee pain 5/10 after running 10k",
     "expected": {
       "injury": "knee pain",
-      "bodyPart": "knee",
+      "body_part": "knee",
       "severity": 5,
       "cause": "running",
       "date": "2026-11-02"
@@ -33,7 +33,7 @@
     "note": "shoulder sore again, think it's from the bench press. like a 4",
     "expected": {
       "injury": "sore shoulder",
-      "bodyPart": "shoulder",
+      "body_part": "shoulder",
       "severity": 4,
       "cause": "bench press",
       "date": null
@@ -43,7 +43,7 @@
     "note": "cut my finger chopping onions on 2026-10-15, bled a lot but pain only 2",
     "expected": {
       "injury": "cut",
-      "bodyPart": "finger",
+      "body_part": "finger",
       "severity": 2,
       "cause": "chopping onions",
       "date": "2026-10-15"
@@ -53,7 +53,7 @@
     "note": "neck stiff since this morning",
     "expected": {
       "injury": "stiff neck",
-      "bodyPart": "neck",
+      "body_part": "neck",
       "severity": null,
       "cause": null,
       "date": null
@@ -63,7 +63,7 @@
     "note": "fell off my bike on 2026-09-20, scraped elbow, really bad, 8 out of 10",
     "expected": {
       "injury": "scraped elbow",
-      "bodyPart": "elbow",
+      "body_part": "elbow",
       "severity": 8,
       "cause": "fell off bike",
       "date": "2026-09-20"
@@ -73,7 +73,7 @@
     "note": "wrist pain typing too much this week, 3/10",
     "expected": {
       "injury": "wrist pain",
-      "bodyPart": "wrist",
+      "body_part": "wrist",
       "severity": 3,
       "cause": "typing",
       "date": null
@@ -83,7 +83,7 @@
     "note": "hamstring pulled during sprint training 2026-08-30. severity 6",
     "expected": {
       "injury": "pulled hamstring",
-      "bodyPart": "hamstring",
+      "body_part": "hamstring",
       "severity": 6,
       "cause": "sprint training",
       "date": "2026-08-30"
@@ -93,7 +93,7 @@
     "note": "headache all day, no idea why",
     "expected": {
       "injury": "headache",
-      "bodyPart": "head",
+      "body_part": "head",
       "severity": null,
       "cause": null,
       "date": null

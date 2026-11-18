@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Search injury notes by meaning: LLM extraction, embeddings and semantic search."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "ollama>=0.6.3",
+    "pydantic>=2.14.3",
+]
 
 [dependency-groups]
 dev = [
