@@ -38,6 +38,8 @@ def search(
     top_k: int = 5,
 ) -> list[SearchResult]:
     """Hybrid search: filter by the extracted fields, then rank by meaning (cosine)."""
+    if top_k < 0:
+        raise ValueError(f"top_k must be 0 or more, got {top_k}")
     filters = filters or SearchFilters()
 
     # 1. Filter: only notes made with this model that pass the field filters.

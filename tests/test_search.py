@@ -52,3 +52,12 @@ def test_no_match_returns_empty_list() -> None:
 def test_ignores_notes_from_another_model() -> None:
     other = [record("old note", "knee", 5, [1.0, 0.0], model="all-minilm")]
     assert search("knee", other, MODEL) == []
+
+
+def test_negative_top_k_is_rejected() -> None:
+    with pytest.raises(ValueError):
+        search("knee", RECORDS, MODEL, top_k=-1)
+
+
+def test_zero_top_k_returns_empty_list() -> None:
+    assert search("knee", RECORDS, MODEL, top_k=0) == []
