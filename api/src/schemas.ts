@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD");
+// A real calendar date in YYYY-MM-DD: 2026-02-30 and 2026-13-01 are rejected.
+const isoDate = z.iso.date();
 
 // What React sends to POST /api/search.
 export const SearchRequest = z.object({

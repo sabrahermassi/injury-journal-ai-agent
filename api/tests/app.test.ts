@@ -64,6 +64,22 @@ describe("TS API", () => {
     expect(response.status).toBe(400);
   });
 
+  it("rejects an impossible calendar date with 400 and never calls Python", async () => {
+    const python = fakePython();
+    const response = await request(createApp(python))
+      .post("/api/search")
+      .send({ query: "knee", filters: { date_from: "2026-02-30" } });
+    expect(response.status).toBe(400);
+    expect(python.received).toEqual([]);
+  });
+
+  it("accepts a real date such as 2026-02-28", async () => {
+    const response = await request(createApp(fakePython()))
+      .post("/api/search")
+      .send({ query: "knee", filters: { date_from: "2026-02-28" } });
+    expect(response.status).toBe(200);
+  });
+
   it("returns 502 when Python is down", async () => {
     const python = fakePython();
     python.search = async () => {
