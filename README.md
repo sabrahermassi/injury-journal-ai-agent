@@ -27,9 +27,10 @@ Each box is one service (one running program), all in this repo. They talk to ea
 
 This repo grows one project at a time. Each project has its own folder in `app/`, `tests/`, `eval/`, `data/` and `docs/`, and a git tag that shows the repo exactly as it was when the project was finished.
 
-| Project                | Python code              | Docs                     | Tag                                                                                                   |
-| ---------------------- | ------------------------ | ------------------------ | ----------------------------------------------------------------------------------------------------- |
-| 1. Semantic search     | `app/semantic_search/`   | `docs/semantic-search/`  | [p1-semantic-search](https://github.com/sabrahermassi/injury-semantic-search/tree/p1-semantic-search) |
+| Project            | Python code            | Docs                    | Tag                                                                                                   |
+| ------------------ | ---------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1. Semantic search | `app/semantic_search/` | `docs/semantic-search/` | [p1-semantic-search](https://github.com/sabrahermassi/injury-semantic-search/tree/p1-semantic-search) |
+| 2. Ask my notes    | `app/ask_notes/`       | `docs/ask-notes/`       | in progress                                                                                           |
 
 ### Folder structure
 
@@ -253,17 +254,17 @@ Open http://localhost:5173: search, filter by body part, minimum severity and da
 
 ## Commands
 
-| Command                                                     | What it does                         |
-| ----------------------------------------------------------- | ------------------------------------ |
-| `uv run --env-file .env python -m app.main`                 | Runs the app                         |
-| `uv run --env-file .env python -m app.semantic_search.index`                | Extracts, embeds and saves new notes |
-| `uv run --env-file .env fastapi dev app/api.py`             | Starts the API on localhost:8000     |
-| `uv run pytest`                                             | Runs the tests                       |
-| `uv run mypy app tests`                                     | Checks types                         |
+| Command                                                                                | What it does                         |
+| -------------------------------------------------------------------------------------- | ------------------------------------ |
+| `uv run --env-file .env python -m app.main`                                            | Runs the app                         |
+| `uv run --env-file .env python -m app.semantic_search.index`                           | Extracts, embeds and saves new notes |
+| `uv run --env-file .env fastapi dev app/api.py`                                        | Starts the API on localhost:8000     |
+| `uv run pytest`                                                                        | Runs the tests                       |
+| `uv run mypy app tests`                                                                | Checks types                         |
 | `uv run --env-file .env python -m app.semantic_search.evaluation.extraction_benchmark` | Runs the extraction benchmark        |
 | `uv run --env-file .env python -m app.semantic_search.evaluation.embedding_benchmark`  | Runs the embedding benchmark         |
-| `uv run --env-file .env python -m app.semantic_search.evaluation.threshold`  | Runs the threshold experiment        |
-| `cd api && npm run dev`                                     | Starts the TS API on localhost:3000  |
-| `cd api && npm test`                                        | Runs the TS API tests                |
-| `cd api && npm run typecheck`                               | Checks the TS API types              |
-| `cd web && npm run dev`                                     | Starts the search page on :5173      |
+| `uv run --env-file .env python -m app.semantic_search.evaluation.threshold`            | Runs the threshold experiment        |
+| `cd api && npm run dev`                                                                | Starts the TS API on localhost:3000  |
+| `cd api && npm test`                                                                   | Runs the TS API tests                |
+| `cd api && npm run typecheck`                                                          | Checks the TS API types              |
+| `cd web && npm run dev`                                                                | Starts the search page on :5173      |
