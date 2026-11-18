@@ -1,8 +1,8 @@
 ```mermaid
 flowchart LR
-    UI["React (TypeScript)"]
-    API["API layer (TypeScript)"]
-    AI["AI service (Python)"]
+    UI["React UI"]
+    API["TS API"]
+    AI["Python AI"]
     OL["Ollama"]
 
     UI -->|public endpoints| API
@@ -16,7 +16,7 @@ flowchart TB
 
     subgraph BOTH["SIDE BY SIDE"]
         E["LLM extraction"]
-        V["Embedding model"]
+        V["Embeddings"]
     end
 
     S["notes.json"]
@@ -29,10 +29,10 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    Q["Search + filters"]
-    F["Filter by fields"]
+    Q["Search"]
+    F["Filter fields"]
     V["Embed search"]
-    C["Cosine similarity"]
+    C["Cosine score"]
     T["Top 5 notes"]
 
     Q --> F
