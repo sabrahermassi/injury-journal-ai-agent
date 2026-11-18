@@ -13,18 +13,33 @@
 
 An embedding model turns text into a **list of numbers**, called a vector. `nomic-embed-text` gives 768 numbers per text.
 
-```text
-"knee pain after running"  ──► embedding model ──►  [0.012, -0.044, 0.091, ... 768 numbers]
+```mermaid
+flowchart LR
+    T["Text"]
+    M["Embed model"]
+    V["Vector"]
+
+    T --> M
+    M --> V
 ```
+
+- **Text**: `"knee pain after running"`
+- **Vector**: `[0.012, -0.044, 0.091, ...]`, 768 numbers
 
 You can't read the numbers, but they encode **meaning**. Texts with similar meaning get vectors that point in a similar direction.
 
-```text
-"hurt my shin jogging"       ●  ●  "knee pain after running"     ← close: similar meaning
+```mermaid
+flowchart LR
+    K["Knee running"]
+    S["Shin jogging"]
+    C["Cut finger"]
 
-
-"cut my finger chopping onions"        ●                          ← far: different meaning
+    K ---|close| S
+    K ---|far| C
 ```
+
+- **Close:** "knee pain after running" and "hurt my shin jogging" have similar meaning.
+- **Far:** "cut my finger chopping onions" means something different.
 
 That's why "running injury" can find "hurt my shin jogging" even though the two share no words.
 
@@ -48,7 +63,7 @@ That's why "running injury" can find "hurt my shin jogging" even though the two 
 
 ```python
 client.embed(
-    model="nomic-embed-text",                       # which embedding model
+    model="nomic-embed-text",                                                 # which embedding model
     input=["search_document: knee pain 5/10", "search_document: sore neck"],  # one or more texts, with the prefix
 )
 # response.embeddings → one vector per text, in the same order
@@ -69,21 +84,26 @@ Compared with `client.chat`:
 
 The same note goes to both models, side by side:
 
-```text
-          You write a messy note: "Twisted my knee running, pain 6"
-                     │                              │
-                     ▼                              ▼
-       LLM extracts the fields          Embedding model turns the
-       (structured outputs)             note text into a vector
-       { body_part: "knee",             [0.12, -0.48, 0.91, ...]
-         severity: 6,                   for search by meaning
-         cause: "running" }
-       for showing, filtering, charts
-                     │                              │
-                     └──────────────┬───────────────┘
-                                    ▼
-               Save note + fields + vector in data/notes.json
+```mermaid
+flowchart TB
+    N["Messy note"]
+
+    subgraph BOTH["SIDE BY SIDE"]
+        E["LLM extraction"]
+        V["Embeddings"]
+    end
+
+    S["notes.json"]
+
+    N --> E
+    N --> V
+    E -->|fields| S
+    V -->|vector| S
 ```
+
+- **LLM extraction**: `"Twisted my knee running, pain 6"` becomes `{ body_part: "knee", severity: 6, cause: "running" }`. Used for filters, display and charts.
+- **Embeddings**: the note text becomes `[0.12, -0.48, 0.91, ...]`. Used for search by meaning.
+- Both are saved together as one record in `data/notes.json`.
 
 First create `data/raw_notes.json`: a UTF-8 JSON array of strings, one note each. `data/` is in `.gitignore`, so it isn't in the repo.
 
@@ -97,45 +117,136 @@ Then run:
 uv run --env-file .env python -m app.index
 ```
 
-```text
-data/raw_notes.json
-        │
-        ▼
-Skip notes already saved with this model   ← note_id = fingerprint of the text
-        │
-        ▼
-embed_documents(new notes)                 ← all at once, with "search_document: "
-        │
-        ▼
-extract(each note)                         ← fields, one note at a time
-        │
-        ▼
-data/notes.json   { id, text, fields, vector, embed_model }
+What the command does:
+
+```mermaid
+flowchart TB
+    R["raw_notes.json"]
+    K["Skip saved"]
+    E["Embed new"]
+    X["Extract fields"]
+    S["notes.json"]
+
+    R --> K
+    K --> E
+    E --> X
+    X --> S
 ```
+
+- **Skip saved**: notes already saved with this model are skipped (`note_id` is a fingerprint of the text).
+- **Embed new**: all new notes in one call, with `search_document: `.
+- **Extract fields**: the LLM, one note at a time.
+- **notes.json**: one record per note: `{ id, text, fields, vector, embed_model }`.
 
 ### The files
 
-| File                     | Job                                                                                   |
-| ------------------------ | ------------------------------------------------------------------------------------- |
-| `app/embedding/embed.py` | `embed_documents` (notes) and `embed_query` (search questions), with the right prefix |
-| `app/store.py`           | `NoteRecord`, plus `load` and `save` for `data/notes.json`                            |
-| `app/index.py`           | The pipeline: skip, embed, extract, save                                              |
+| File                          | Job                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------- |
+| `app/embedding/embed.py`      | `embed_documents` (notes) and `embed_query` (search questions), with the right prefix |
+| `app/store.py`                | `NoteRecord`, plus `load` and `save` for `data/notes.json`                            |
+| `app/index.py`                | The pipeline: skip, embed, extract, save                                              |
+| `app/embedding/similarity.py` | `cosine_similarity`: how similar two vectors are (−1 to 1)                            |
 
 ### Searching (coming in milestones 4 and 5)
 
-```text
-"knee pain after running"
-        │
-        ▼
-embed_query  ──► vector (not saved)        ← with "search_query: "
-        │
-        ▼
-Cosine similarity vs every saved vector    ← milestone 4
-        │
-        ▼
-Top 5 closest notes                        ← milestone 5
+```mermaid
+flowchart LR
+    Q["Question"]
+    E["Embed query"]
+    C["Cosine score"]
+    T["Top 5 notes"]
+
+    Q --> E
+    E --> C
+    C --> T
 ```
+
+- **Embed query**: with `search_query: `. The vector is not saved.
+- **Cosine score**: compared with every saved vector (milestone 4).
+- **Top 5 notes**: highest score first (milestone 5).
 
 ## Cosine similarity
 
-_To be added in milestone 4._
+### What it measures
+
+Cosine similarity scores how much two vectors **point in the same direction**: how similar the two texts are in meaning. It ignores the vectors' length and only looks at direction.
+
+```mermaid
+flowchart LR
+    K["Knee running"]
+    S["Shin jogging"]
+    C["Cut finger"]
+
+    K -->|score 0.9| S
+    K -->|score 0.1| C
+```
+
+- **Small angle, score close to 1:** similar meaning.
+- **Big angle, score close to 0:** unrelated.
+
+| Score | Angle | Meaning                      |
+| ----- | ----- | ---------------------------- |
+| 1     | 0°    | Same direction: same meaning |
+| 0     | 90°   | Unrelated                    |
+| −1    | 180°  | Opposite direction           |
+
+Text embeddings almost always score between 0 and 1.
+
+### The formula
+
+```text
+cosine(a, b) = (a · b) / (|a| × |b|)
+
+a · b  = dot product = a[0]*b[0] + a[1]*b[1] + ...   multiply pairs, add them up
+|a|    = length      = sqrt(a[0]² + a[1]² + ...)      Pythagoras in many dimensions
+```
+
+A small example with 2 numbers instead of 768:
+
+```text
+a = [1, 2]    b = [2, 4]
+a · b = 1×2 + 2×4 = 10
+|a| = sqrt(1 + 4)  = 2.236
+|b| = sqrt(4 + 16) = 4.472
+cosine = 10 / (2.236 × 4.472) = 1.0     ← b is just a longer copy of a: same direction
+```
+
+### Rules
+
+1. **Both vectors must have the same length**, which means they come from the same model. Otherwise it raises `ValueError`.
+2. **A zero vector has no direction,** so it raises `ValueError`.
+3. **Scaling doesn't change the score:** `[1, 2]` and `[10, 20]` score 1.
+
+### In our code
+
+`cosine_similarity(a, b)` in `app/embedding/similarity.py`, written by hand without a library, and tested in `tests/test_similarity.py`:
+
+| Test                           | Checks                   |
+| ------------------------------ | ------------------------ |
+| identical vectors              | score 1                  |
+| orthogonal vectors             | score 0                  |
+| opposite vectors               | score −1                 |
+| scaled vector                  | still 1 (direction only) |
+| different lengths, zero vector | raise `ValueError`       |
+
+### How search uses it (milestone 5)
+
+```mermaid
+flowchart LR
+    Q["Query vector"]
+    N1["Note 1: 0.82"]
+    N2["Note 2: 0.31"]
+    N3["Note 3: 0.77"]
+    T["Top 5"]
+
+    Q --> N1
+    Q --> N2
+    Q --> N3
+    N1 --> T
+    N2 --> T
+    N3 --> T
+```
+
+The query vector is compared with every note's vector, the scores are sorted from high to low, and the top 5 are kept.
+
+In production, vector databases (pgvector, Qdrant) compute this for you, with indexes that avoid comparing against every vector.

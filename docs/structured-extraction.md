@@ -38,21 +38,24 @@ Almost every LLM API uses this format. OpenAI made it popular, and Ollama, Mistr
 
 ### The mental model
 
-```text
-┌──────────────────────────────────────┐
-│ system:    "Extract injury data...   │  ← rules (you)
-│             use null, never guess"   │
-├──────────────────────────────────────┤
-│ user:      "Twisted my ankle, pain 7"│  ← input
-└──────────────────┬───────────────────┘
-                   │  send the whole script
-                   ▼
-             ┌───────────┐
-             │   MODEL   │  reads everything, writes the next line
-             └─────┬─────┘
-                   ▼
-        assistant: '{"injury": "twisted ankle", ...}'
+```mermaid
+flowchart LR
+    subgraph SCRIPT["MESSAGES"]
+        S["system: rules"]
+        U["user: note"]
+    end
+
+    M["Model"]
+    A["assistant"]
+
+    SCRIPT -->|whole script| M
+    M -->|next line| A
 ```
+
+- **system**: your rules, for example `"Extract injury data... use null, never guess"`.
+- **user**: the input, for example `"Twisted my ankle, pain 7"`.
+- **Model**: reads everything and writes the next line.
+- **assistant**: the model's reply, for example `'{"injury": "twisted ankle", ...}'`.
 
 ### The model has no memory
 
@@ -83,55 +86,57 @@ client.chat(
 - **In:** `"Twisted my left ankle playing football yesterday, pain about 7"`
 - **Out:** `Injury(injury="twisted ankle", body_part="left ankle", severity=7, cause="football", date=None)`
 
-```text
-1. Build messages
-   system: rules
-   user:   note
-        │
-        ▼
-2. Call the LLM
-        │
-        ▼
-3. Parse JSON + validate with Pydantic
-        │
-     valid? ── yes ──► return Injury ✅
-        │
-        no
-        ▼
-4. Add 2 messages
-   assistant: the wrong answer
-   user:      "Invalid: <error>. Fix it."
-        │
-        ▼
-5. Call the LLM again
-        │
-        ▼
-6. Parse JSON + validate with Pydantic
-        │
-     valid? ── yes ──► return Injury ✅
-        │
-        no ──► raise error ❌
+```mermaid
+flowchart TB
+    B["Build messages"]
+    C1["Call LLM"]
+    V1{"Valid?"}
+    R["Return Injury"]
+    A["Add 2 messages"]
+    C2["Call LLM again"]
+    V2{"Valid?"}
+    X["Raise error"]
+
+    B --> C1
+    C1 --> V1
+    V1 -->|yes| R
+    V1 -->|no| A
+    A --> C2
+    C2 --> V2
+    V2 -->|yes| R
+    V2 -->|no| X
 ```
+
+- **Build messages**: system (rules) + user (note).
+- **Valid?**: parse the JSON and validate it with Pydantic (`model_validate_json`).
+- **Add 2 messages**: assistant (the wrong answer) + user (`"Invalid: <error>. Fix it."`).
+- **Raise error**: the second answer is still invalid, so we stop. Retries always have a limit.
 
 ### Why the retry adds an `assistant` message
 
 When the model's answer is invalid, you rebuild the conversation as it actually happened, then add your correction:
 
-```text
-┌───────────────────────────────────────────┐
-│ system:    rules                          │
-│ user:      the note                       │
-│ assistant: '{"injury": "twisted ankle"}'  │  ← what the model said (wrong)
-│ user:      "Invalid: 4 fields missing.    │  ← your correction
-│             Fix it."                      │
-└─────────────────────┬─────────────────────┘
-                      ▼
-                  ┌───────┐
-                  │ MODEL │
-                  └───┬───┘
-                      ▼
-        assistant: '{"injury": "...", "body_part": ..., ...}'  ✅
+```mermaid
+flowchart LR
+    subgraph RETRY["ATTEMPT 2 SENDS"]
+        S["system: rules"]
+        U1["user: note"]
+        A1["assistant"]
+        U2["user: Invalid"]
+    end
+
+    M["Model"]
+    F["Fixed answer"]
+
+    RETRY --> M
+    M --> F
 ```
+
+- **system** and **user: note**: still there, because the model has no memory.
+- **assistant**: the model's wrong first answer, for example `'{"injury": "twisted ankle"}'`.
+- **user: Invalid**: your correction, for example `"Invalid: 4 fields missing. Fix it."`
+
+Why these roles:
 
 - **`assistant` for the wrong answer:** it's the model's own line. The model sees it as "what I said", so it understands that its own answer was wrong.
 - **`user` for the error:** it's you replying, "that's wrong, here's why".
