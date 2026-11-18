@@ -1,35 +1,42 @@
-# Diagram test
-
-## A: default
-
 ```mermaid
-flowchart TD
-    A["1. You write a messy note"] --> B["2. LLM extracts the fields"]
-    B --> C["3. Embedding model makes a vector"]
+flowchart LR
+    UI["React (TypeScript)"]
+    API["API layer (TypeScript)"]
+    AI["AI service (Python)"]
+    OL["Ollama"]
+
+    UI -->|public endpoints| API
+    API -->|internal endpoints| AI
+    AI --> OL
 ```
 
-## B: SVG text labels
-
 ```mermaid
-%%{init: {"flowchart": {"htmlLabels": false}} }%%
-flowchart TD
-    A["1. You write a messy note"] --> B["2. LLM extracts the fields"]
-    B --> C["3. Embedding model makes a vector"]
+flowchart TB
+    N["Messy note"]
+
+    subgraph BOTH["SIDE BY SIDE"]
+        E["LLM extraction"]
+        V["Embedding model"]
+    end
+
+    S["notes.json"]
+
+    N --> E
+    N --> V
+    E -->|fields| S
+    V -->|vector| S
 ```
 
-## C: SVG text labels + Arial + padding
-
 ```mermaid
-%%{init: {"themeVariables": {"fontFamily": "Arial"}, "flowchart": {"htmlLabels": false, "padding": 30}} }%%
-flowchart TD
-    A["1. You write a messy note"] --> B["2. LLM extracts the fields"]
-    B --> C["3. Embedding model makes a vector"]
-```
+flowchart LR
+    Q["Search + filters"]
+    F["Filter by fields"]
+    V["Embed search"]
+    C["Cosine similarity"]
+    T["Top 5 notes"]
 
-## D: Markdown string labels
-
-```mermaid
-flowchart TD
-    A["`1. You write a messy note`"] --> B["`2. LLM extracts the fields`"]
-    B --> C["`3. Embedding model makes a vector`"]
+    Q --> F
+    F --> V
+    V --> C
+    C --> T
 ```
