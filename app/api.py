@@ -5,7 +5,7 @@ from app.env import require_env
 from app.extraction.extract import extract
 from app.extraction.schema import Injury
 from app.index import IndexSummary, index_and_save
-from app.search import SearchFilters, SearchResult, search
+from app.search import MIN_SCORE, SearchFilters, SearchResult, search
 from app.store import load
 
 app = FastAPI(title="Injury semantic search")
@@ -23,6 +23,7 @@ class SearchRequest(BaseModel):
     query: str = Field(min_length=1)
     filters: SearchFilters | None = None
     top_k: int = Field(default=5, ge=1, le=50)
+    min_score: float = Field(default=MIN_SCORE, ge=-1, le=1)
 
 
 @app.post("/extract")
@@ -43,4 +44,4 @@ def index_endpoint(request: IndexRequest) -> IndexSummary:
 @app.post("/search")
 def search_endpoint(request: SearchRequest) -> list[SearchResult]:
     """Hybrid search: filter by fields, then rank by meaning."""
-    return search(request.query, load(), require_env("EMBED_MODEL"), request.filters, request.top_k)
+    return search(request.query, load(), require_env("EMBED_MODEL"), request.filters, request.top_k, request.min_score)
