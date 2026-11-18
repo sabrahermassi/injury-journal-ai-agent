@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from app.extract import extract
+from app.extraction.extract import extract
 
 MODELS = ["llama3.2", "qwen2.5:3b", "qwen2.5:7b"]
 FIELDS = ["injury", "body_part", "severity", "cause", "date"]

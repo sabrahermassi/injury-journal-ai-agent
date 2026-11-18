@@ -1,6 +1,6 @@
 from pydantic import ValidationError
-from app.llm import chat
-from app.schema import Injury
+from app.extraction.llm import chat
+from app.extraction.schema import Injury
 
 SYSTEM = """You extract injury data from a personal note.
 Return JSON with keys: injury, body_part, severity (1-10), cause, date (YYYY-MM-DD).

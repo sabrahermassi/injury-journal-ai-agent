@@ -1,8 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
-from app.extract import extract
-from app.schema import Injury
+from app.extraction.extract import extract
+from app.extraction.schema import Injury
 
 VALID = '{"injury": "twisted ankle", "body_part": "ankle", "severity": 7, "cause": "football", "date": null}'
 
@@ -30,7 +30,7 @@ def test_extract_retries_once_with_the_error(monkeypatch: pytest.MonkeyPatch) ->
         calls.append(list(messages))
         return next(replies)
 
-    monkeypatch.setattr("app.extract.chat", fake_chat)
+    monkeypatch.setattr("app.extraction.extract.chat", fake_chat)
 
     result = extract("Twisted my ankle playing football, pain 7")
 

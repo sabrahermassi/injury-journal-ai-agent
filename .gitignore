@@ -23,3 +23,6 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+
+# Personal health notes and generated vectors: never commit
+data/
