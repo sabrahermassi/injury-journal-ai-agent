@@ -75,6 +75,7 @@ FastAPI builds a test page from your request models, for free: http://localhost:
 | `POST /search`  | `{ query, filters, top_k, min_score }` | Top notes with `text`, `fields`, `score` | `search()`         |
 
 `app/api.py` is a thin layer: it checks the request and calls the functions from milestones 2 to 5. No AI logic lives there.
+Milestone 8 added `GET /body-parts` (every body part in the saved notes, for the UI's dropdown) and the `date_from` / `date_to` filters on `/search`.
 
 ### Where it sits
 

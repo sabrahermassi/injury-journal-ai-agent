@@ -16,12 +16,12 @@ flowchart LR
     AI --> OL
 ```
 
-- **React UI** (TypeScript): the UI, localhost:5173
-- **TS API** (TypeScript): login, notes, database, validated with Zod, localhost:3000
-- **Python AI** (Python): extract, embed, search, validated with Pydantic, localhost:8000. **This repo.**
+- **React UI** (`web/`, TypeScript, React + Vite): the search page, localhost:5173
+- **TS API** (`api/`, TypeScript, Express + Zod): public endpoints, validates requests and Python's answers, localhost:3000
+- **Python AI** (`app/`, Python, FastAPI + Pydantic): extract, embed, search, localhost:8000
 - **Ollama**: runs the models locally, localhost:11434
 
-Each box is one service (one running program). They talk to each other over HTTP.
+Each box is one service (one running program), all in this repo. They talk to each other over HTTP.
 
 ## How it works
 
@@ -83,6 +83,7 @@ flowchart LR
 - [Embedding model](docs/embedding-model.md): what vectors are, the rules for using them, how notes are embedded and saved, and cosine similarity.
 - [FastAPI endpoints](docs/fastapi-endpoints.md): the 3 endpoints, the `/docs` test page, and how the lock stops two saves from losing a note.
 - [Score threshold](docs/threshold.md): why search needs a minimum score, and how 0.53 was chosen by experiment.
+- [Search UI](docs/search-ui.md): how React, the TS API and Python connect, and what each layer checks.
 
 ## Status
 
@@ -93,7 +94,7 @@ flowchart LR
 - [x] Milestone 5: search function (hybrid)
 - [x] Milestone 6: FastAPI endpoints
 - [x] Milestone 7: threshold experiment
-- [ ] Milestone 8: React search UI
+- [x] Milestone 8: React search UI
 
 ## Tech stack
 
@@ -106,6 +107,10 @@ flowchart LR
 | mypy           | Checks type hints (like tsc)                |
 | Ollama         | Runs the models locally, free               |
 | FastAPI        | HTTP endpoints for the TypeScript API       |
+| Node.js 22+    | Runs the TS API and the React dev server    |
+| Express + Zod  | The TS API, and its request validation      |
+| React + Vite   | The search page                             |
+| Vitest         | TS API tests (like pytest)                  |
 | GitHub Actions | Runs the tests and mypy on every push       |
 
 Models: `qwen2.5:3b` for extraction, `nomic-embed-text` for embeddings (both chosen by benchmark).
@@ -149,12 +154,14 @@ To run it yourself: `ollama pull mxbai-embed-large`, `ollama pull all-minilm`, t
 
 ## Run locally
 
-Requires Python 3.12+, [uv](https://docs.astral.sh/uv/) and [Ollama](https://ollama.com) running locally.
+Requires Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js 22+ and [Ollama](https://ollama.com) running locally.
 
 ```bash
 git clone https://github.com/sabrahermassi/injury-semantic-search.git
 cd injury-semantic-search
 uv sync
+(cd api && npm install)
+(cd web && npm install)
 ollama pull qwen2.5:3b
 ollama pull nomic-embed-text
 ```
@@ -206,6 +213,18 @@ Open http://localhost:8000/docs to try `POST /extract`, `POST /index` and `POST 
 { "query": "running injury", "filters": { "body_part": "knee" }, "top_k": 3 }
 ```
 
+### Start the search page
+
+Index your notes first, then run the 3 services, each in its own terminal:
+
+| Terminal | Command                                         | Runs                 |
+| -------- | ----------------------------------------------- | -------------------- |
+| 1        | `uv run --env-file .env fastapi dev app/api.py` | Python AI, port 8000 |
+| 2        | `cd api && npm run dev`                         | TS API, port 3000    |
+| 3        | `cd web && npm run dev`                         | React, port 5173     |
+
+Open http://localhost:5173: search, filter by body part, minimum severity and date range, and see each note with its score and extracted fields.
+
 ## Commands
 
 | Command                                                     | What it does                         |
@@ -218,3 +237,7 @@ Open http://localhost:8000/docs to try `POST /extract`, `POST /index` and `POST 
 | `uv run --env-file .env python -m app.extraction.benchmark` | Runs the extraction benchmark        |
 | `uv run --env-file .env python -m app.embedding.benchmark`  | Runs the embedding benchmark         |
 | `uv run --env-file .env python -m app.embedding.threshold`  | Runs the threshold experiment        |
+| `cd api && npm run dev`                                     | Starts the TS API on localhost:3000  |
+| `cd api && npm test`                                        | Runs the TS API tests                |
+| `cd api && npm run typecheck`                               | Checks the TS API types              |
+| `cd web && npm run dev`                                     | Starts the search page on :5173      |

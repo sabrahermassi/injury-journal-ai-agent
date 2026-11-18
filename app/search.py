@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel, Field
 
 from app.embedding.embed import embed_query
@@ -13,6 +15,8 @@ MIN_SCORE = 0.53
 class SearchFilters(BaseModel):
     body_part: str | None = None
     min_severity: int | None = Field(default=None, ge=1, le=10)
+    date_from: date | None = None
+    date_to: date | None = None
 
 
 class SearchResult(BaseModel):
@@ -31,7 +35,25 @@ def matches(record: NoteRecord, filters: SearchFilters) -> bool:
     if filters.min_severity is not None:
         if fields.severity is None or fields.severity < filters.min_severity:
             return False
+    if filters.date_from is not None or filters.date_to is not None:
+        note_date = parse_date(fields.date)
+        if note_date is None:
+            return False
+        if filters.date_from is not None and note_date < filters.date_from:
+            return False
+        if filters.date_to is not None and note_date > filters.date_to:
+            return False
     return True
+
+
+def parse_date(text: str | None) -> date | None:
+    """The note's date as a real date, or None if it's missing or not YYYY-MM-DD."""
+    if text is None:
+        return None
+    try:
+        return date.fromisoformat(text)
+    except ValueError:
+        return None
 
 
 def search(

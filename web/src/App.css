@@ -1,0 +1,129 @@
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+h1 {
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  margin: 0 0 24px;
+  color: var(--muted);
+}
+
+.search-row {
+  display: flex;
+  gap: 8px;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  color: inherit;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.search-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.filters input[type="range"] {
+  padding: 8px 0;
+  border: none;
+  background: none;
+  accent-color: var(--accent);
+}
+
+.error {
+  color: var(--error);
+}
+
+.empty {
+  color: var(--muted);
+}
+
+.results {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.results li {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.result-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.note {
+  margin: 0;
+  font-weight: 500;
+}
+
+.score {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.fields dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.fields dd {
+  margin: 0;
+  font-size: 14px;
+}
