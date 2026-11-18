@@ -45,7 +45,7 @@ Details: [Structured extraction](docs/extraction.md)
 ## Status
 
 - [x] Milestone 1: Project skeleton
-- [ ] Milestone 2: Structured extraction (choose models)
+- [x] Milestone 2: Structured extraction (choose model)
 - [ ] Milestone 3: Embed and persist
 - [ ] Milestone 4: Cosine similarity with tests
 - [ ] Milestone 5: CLI search
@@ -61,24 +61,53 @@ Details: [Structured extraction](docs/extraction.md)
 | tsx                 | Runs `.ts` files directly, no build step    |
 | Vitest              | Tests                                       |
 | npm                 | Package manager                             |
+| Zod                 | Validates the LLM's JSON output             |
+| Ollama              | Runs the LLM locally, free                  |
 
-LLM and embedding models: chosen in milestone 2 by benchmarking (local Ollama, free).
+Embedding model: chosen in milestone 3 by benchmarking.
+
+## Model choice
+
+Each model extracted 5 fields from the same 10 labelled test notes (`eval/notes.json`), and `src/eval.ts` compared its answers to the expected ones.
+
+| Model          | Correct | Failed | Speed         |
+| -------------- | ------- | ------ | ------------- |
+| llama3.2       | 78%     | 0      | 1.1s/note     |
+| **qwen2.5:3b** | **88%** | **0**  | **1.1s/note** |
+| qwen2.5:7b     | 88%     | 0      | 2.3s/note     |
+
+Chose **qwen2.5:3b**: same accuracy as the 7B model, faster and smaller.
+
+To run the benchmark yourself , pull all 3 models, then run it:
+
+```bash
+ollama pull llama3.2
+ollama pull qwen2.5:3b
+ollama pull qwen2.5:7b
+npx tsx --env-file=.env src/eval.ts
+```
 
 ## Run locally
 
-Requires Node.js 20+.
+Requires Node.js 20+ and [Ollama](https://ollama.com) running locally.
 
 ```bash
 git clone https://github.com/sabrahermassi/injury-semantic-search.git
 cd injury-semantic-search
 npm install
+ollama pull qwen2.5:3b
 ```
 
 Create a `.env` file in the project root:
 
 ```
 APP_NAME=injury-semantic-search
+OLLAMA_URL=http://localhost:11434
+LLM_MODEL=qwen2.5:3b
 ```
+
+- `OLLAMA_URL`: where Ollama runs (default port 11434).
+- `LLM_MODEL`: the model used for extraction.
 
 ## Scripts
 
