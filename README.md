@@ -5,17 +5,25 @@ Search my injury notes by meaning, not just keywords.
 ## Architecture
 
 ```text
-React (TypeScript)       localhost:5173   the UI
-        │
-        ▼
-API layer (TypeScript)   localhost:3000   login, notes, database
-        │
-        ▼
-AI service (Python)      localhost:8000   extract, embed, search   ← this repo
-        │
-        ▼
-Ollama                   localhost:11434  the models
+          You write a messy note: "Twisted my knee running, pain 6"
+                     │                              │
+                     ▼                              ▼
+       LLM extracts the fields          Embedding model turns the
+       (structured outputs)             note text into a vector
+       { body_part: "knee",             [0.12, -0.48, 0.91, ...]
+         severity: 6,                   for search by meaning
+         cause: "running" }
+       for showing, filtering, charts
+                     │                              │
+                     └──────────────┬───────────────┘
+                                    ▼
+               Save note + fields + vector in notes.json
 ```
+
+The same note goes to **both** models, side by side:
+
+- **Fields** (`{ body_part: "knee", severity: 6 }`) are for showing, filtering and charts.
+- **Vector** (`[0.12, -0.48, ...]`) is for search by meaning.
 
 ```text
 React ──► TS API endpoints ──► Python endpoints ──► Ollama
@@ -64,8 +72,8 @@ Every RAG app has two flows: **indexing** (saving data) and **querying** (search
 
 ## Learn more
 
-- [Structured extraction](docs/extraction.md): how a messy note becomes a validated `Injury` object, including the retry.
-- [How we talk to LLMs](docs/llm-messages.md): what `messages` are, the `system` / `user` / `assistant` roles, and why the model needs the whole conversation on every call.
+- [Structured extraction](docs/structured-extraction.md): the LLM, how `messages` and roles work, and how a messy note becomes validated fields.
+- [Embedding model](docs/embedding-model.md): what vectors are, the rules for using them, and how notes are embedded and saved.
 
 ## Status
 
@@ -122,6 +130,7 @@ git clone https://github.com/sabrahermassi/injury-semantic-search.git
 cd injury-semantic-search
 uv sync
 ollama pull qwen2.5:3b
+ollama pull nomic-embed-text
 ```
 
 Create a `.env` file in the project root:
@@ -130,16 +139,34 @@ Create a `.env` file in the project root:
 APP_NAME=injury-semantic-search
 OLLAMA_URL=http://localhost:11434
 LLM_MODEL=qwen2.5:3b
+EMBED_MODEL=nomic-embed-text
 ```
 
 - `OLLAMA_URL`: where Ollama runs (default port 11434).
 - `LLM_MODEL`: the model used for extraction.
+- `EMBED_MODEL`: the model used for embeddings.
 
 Run the app (always with `-m`, from the project root):
 
 ```bash
 uv run --env-file .env python -m app.main
 ```
+
+### Index your notes
+
+Create `data/raw_notes.json`: a UTF-8 JSON array of strings, one note each. `data/` is in `.gitignore`, so personal health notes are never committed.
+
+```json
+["knee pain after running", "lower back hurts after sitting all day"]
+```
+
+Then run:
+
+```bash
+uv run --env-file .env python -m app.index
+```
+
+Each note is extracted and embedded, then saved in `data/notes.json`.
 
 ## Commands
 
