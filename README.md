@@ -78,6 +78,7 @@ flowchart LR
 
 - [Structured extraction](docs/structured-extraction.md): the LLM, how `messages` and roles work, and how a messy note becomes validated fields.
 - [Embedding model](docs/embedding-model.md): what vectors are, the rules for using them, how notes are embedded and saved, and cosine similarity.
+- [FastAPI endpoints](docs/fastapi-endpoints.md): the 3 endpoints, the `/docs` test page, and how the lock stops two saves from losing a note.
 
 ## Status
 
@@ -86,21 +87,22 @@ flowchart LR
 - [x] Milestone 3: Embed and persist
 - [x] Milestone 4: Cosine similarity with tests
 - [x] Milestone 5: search function (hybrid)
-- [ ] Milestone 6: FastAPI endpoints
+- [x] Milestone 6: FastAPI endpoints
 - [ ] Milestone 7: threshold experiment
 - [ ] Milestone 8: React search UI
 
 ## Tech stack
 
-| Tool         | Why                                         |
-| ------------ | ------------------------------------------- |
-| Python 3.12+ | The AI service                              |
-| uv           | Virtual environment and packages (like npm) |
-| Pydantic     | Validates the LLM's JSON output (like Zod)  |
-| pytest       | Tests                                       |
-| mypy         | Checks type hints (like tsc)                |
-| Ollama       | Runs the models locally, free               |
-| FastAPI      | HTTP endpoints for the TypeScript API       |
+| Tool           | Why                                         |
+| -------------- | ------------------------------------------- |
+| Python 3.12+   | The AI service                              |
+| uv             | Virtual environment and packages (like npm) |
+| Pydantic       | Validates the LLM's JSON output (like Zod)  |
+| pytest         | Tests                                       |
+| mypy           | Checks type hints (like tsc)                |
+| Ollama         | Runs the models locally, free               |
+| FastAPI        | HTTP endpoints for the TypeScript API       |
+| GitHub Actions | Runs the tests and mypy on every push       |
 
 Models: `qwen2.5:3b` for extraction, `nomic-embed-text` for embeddings (both chosen by benchmark).
 
@@ -188,12 +190,25 @@ uv run --env-file .env python -m app.index
 
 Each note is extracted and embedded, then saved in `data/notes.json`.
 
+### Start the API
+
+```bash
+uv run --env-file .env fastapi dev app/api.py
+```
+
+Open http://localhost:8000/docs to try `POST /extract`, `POST /index` and `POST /search` in the browser. For example, `/search` with:
+
+```json
+{ "query": "running injury", "filters": { "body_part": "knee" }, "top_k": 3 }
+```
+
 ## Commands
 
 | Command                                                     | What it does                         |
 | ----------------------------------------------------------- | ------------------------------------ |
 | `uv run --env-file .env python -m app.main`                 | Runs the app                         |
 | `uv run --env-file .env python -m app.index`                | Extracts, embeds and saves new notes |
+| `uv run --env-file .env fastapi dev app/api.py`             | Starts the API on localhost:8000     |
 | `uv run pytest`                                             | Runs the tests                       |
 | `uv run mypy app tests`                                     | Checks types                         |
 | `uv run --env-file .env python -m app.extraction.benchmark` | Runs the extraction benchmark        |
