@@ -1,14 +1,25 @@
+import threading
 from pathlib import Path
 
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from app.embedding.embed import embed_documents
 from app.env import require_env
 from app.extraction.extract import extract
-from app.store import NoteRecord, load, note_id, save
+from app.store import STORE_PATH, NoteRecord, load, note_id, save
 
-INPUT_PATH = Path("data/raw_notes.json")
 NoteList = TypeAdapter(list[str])
+INPUT_PATH = Path("data/raw_notes.json")
+
+# Only one load → index → save can run at a time. Without it, two /index calls
+# could load the same store, and the last save would delete the other's new notes.
+store_lock = threading.Lock()
+
+
+class IndexSummary(BaseModel):
+    total: int
+    added: int
+    rebuilt: int
 
 
 def index_notes(notes: list[str], records: list[NoteRecord], embed_model: str) -> list[NoteRecord]:
@@ -16,21 +27,20 @@ def index_notes(notes: list[str], records: list[NoteRecord], embed_model: str) -
     kept = [record for record in records if record.embed_model == embed_model]
     stale = [record for record in records if record.embed_model != embed_model]
 
-    # Model changed: re-embed the saved notes with the new model and reuse their saved fields (no extraction, so no note can be lost). If embedding fails, it raises before anything is saved, so the old store stays as it was.
+    # Model changed: re-embed the saved notes and reuse their saved fields (no extraction).
     if stale:
         vectors = embed_documents([record.text for record in stale], embed_model)
         for record, vector in zip(stale, vectors, strict=True):
             kept.append(record.model_copy(update={"vector": vector, "embed_model": embed_model}))
 
+    # Notes not saved yet. Compare by id, so "knee pain" and " knee pain " count once.
     done = {record.id for record in kept}
-
-    # Notes not saved yet, one per id (the first text wins for duplicates).
     new_notes: list[str] = []
-    for note in notes:
-        current_id = note_id(note)
+    for text in notes:
+        current_id = note_id(text)
         if current_id not in done:
-            new_notes.append(note)
             done.add(current_id)
+            new_notes.append(text)
     if not new_notes:
         return kept
 
@@ -45,16 +55,20 @@ def index_notes(notes: list[str], records: list[NoteRecord], embed_model: str) -
     return kept
 
 
-def main() -> None:
-    embed_model = require_env("EMBED_MODEL")
-    notes = NoteList.validate_json(INPUT_PATH.read_text(encoding="utf-8"))
-    before = load()
-    records = index_notes(notes, before, embed_model)
-    save(records)
-    before_ids = {record.id for record in before}
-    added = sum(1 for record in records if record.id not in before_ids)
+def index_and_save(notes: list[str], embed_model: str, path: Path = STORE_PATH) -> IndexSummary:
+    """Load the store, add the new notes, save. Used by the script and by POST /index."""
+    with store_lock:
+        before = load(path)
+        records = index_notes(notes, before, embed_model)
+        save(records, path)
     rebuilt = sum(1 for record in before if record.embed_model != embed_model)
-    print(f"{len(records)} notes in the store ({added} new, {rebuilt} re-embedded).")
+    return IndexSummary(total=len(records), added=len(records) - len(before), rebuilt=rebuilt)
+
+
+def main() -> None:
+    notes = NoteList.validate_json(INPUT_PATH.read_text(encoding="utf-8"))
+    summary = index_and_save(notes, require_env("EMBED_MODEL"))
+    print(f"{summary.total} notes in the store ({summary.added} new, {summary.rebuilt} re-embedded).")
 
 
 if __name__ == "__main__":
