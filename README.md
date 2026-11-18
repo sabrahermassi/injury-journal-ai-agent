@@ -60,7 +60,7 @@ flowchart LR
     F["Filter fields"]
     V["Embed search"]
     C["Cosine score"]
-    M["Min score 0.53"]
+    M["Min score 0.54"]
     T["Top 5 notes"]
 
     Q --> F
@@ -74,7 +74,7 @@ flowchart LR
 - **Filter fields** keeps only notes whose extracted fields match.
 - **Embed search** turns the search into a vector (not saved).
 - **Cosine score** compares it with each remaining note's vector.
-- **Min score 0.53** drops weak matches, so an off-topic search returns nothing.
+- **Min score 0.54** drops weak matches, so an off-topic search returns nothing.
 - **Top 5 notes** are shown with their fields, highest score first.
 
 ## Learn more
@@ -82,7 +82,7 @@ flowchart LR
 - [Structured extraction](docs/structured-extraction.md): the LLM, how `messages` and roles work, and how a messy note becomes validated fields.
 - [Embedding model](docs/embedding-model.md): what vectors are, the rules for using them, how notes are embedded and saved, and cosine similarity.
 - [FastAPI endpoints](docs/fastapi-endpoints.md): the 3 endpoints, the `/docs` test page, and how the lock stops two saves from losing a note.
-- [Score threshold](docs/threshold.md): why search needs a minimum score, and how 0.53 was chosen by experiment.
+- [Score threshold](docs/threshold.md): why search needs a minimum score, and how 0.54 was chosen by experiment.
 - [Search UI](docs/search-ui.md): how React, the TS API and Python connect, and what each layer checks.
 
 ## Status

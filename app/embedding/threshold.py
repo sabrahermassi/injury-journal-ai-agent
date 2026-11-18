@@ -17,6 +17,13 @@ def suggest_threshold(good_scores: list[float], bad_scores: list[float]) -> floa
     return round((lowest_good + highest_bad) / 2, 2)
 
 
+def tradeoff(good_scores: list[float], bad_scores: list[float], threshold: float) -> tuple[int, int]:
+    """At this threshold: how many injury questions still find their note, how many off-topic ones are blocked."""
+    kept = sum(1 for score in good_scores if score >= threshold)
+    blocked = sum(1 for score in bad_scores if score < threshold)
+    return kept, blocked
+
+
 def main() -> None:
     model = require_env("EMBED_MODEL")
     notes = TypeAdapter(list[LabelledNote]).validate_json(Path("eval/notes.json").read_text(encoding="utf-8"))
@@ -50,6 +57,13 @@ def main() -> None:
         print("The scores overlap: no threshold separates them cleanly.")
     else:
         print(f"Suggested threshold: {threshold}")
+
+    # What each threshold would cost: good notes lost vs off-topic questions blocked.
+    print("Threshold | injury questions kept | off-topic blocked")
+    for step in range(50, 71, 2):
+        candidate = step / 100
+        kept, blocked = tradeoff(good_scores, bad_scores, candidate)
+        print(f"  {candidate:.2f}    | {kept}/{len(good_scores)}                 | {blocked}/{len(bad_scores)}")
 
 
 if __name__ == "__main__":
