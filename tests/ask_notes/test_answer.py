@@ -1,11 +1,12 @@
 import json
 from datetime import date
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.api import app
-from app.ask_notes.answer import REFUSAL, Quote, ask, build_messages, find_bad_quotes
+from app.ask_notes.answer import MIN_SCORE, NOT_FOUND, REFUSAL, Quote, ask, build_messages, find_bad_quotes
 from app.ask_notes.retrieve import RetrievedChunk
 
 
@@ -145,3 +146,33 @@ def test_ask_endpoint(model: Prompts, monkeypatch: pytest.MonkeyPatch) -> None:
     assert response.status_code == 200
     assert response.json()["refused"] is False
     assert client.post("/ask", json={"question": "x\x00"}).status_code == 422
+
+
+# --- not-found behavior ---
+
+
+def test_weak_chunks_mean_not_found_without_calling_the_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    weak = [c.model_copy(update={"score": MIN_SCORE - 0.01}) for c in CHUNKS]
+    monkeypatch.setattr("app.ask_notes.answer.retrieve", lambda q, m, f, k, u: weak)
+    monkeypatch.setattr("app.ask_notes.answer.chat", lambda messages: pytest.fail("model should not be called"))
+    result = ask("What did I eat for breakfast?", "nomic-embed-text")
+    assert result.refused and result.answer == NOT_FOUND
+
+
+def test_weak_chunks_are_left_out_of_the_prompt(model: Prompts, monkeypatch: pytest.MonkeyPatch) -> None:
+    mixed = [CHUNKS[0], CHUNKS[1].model_copy(update={"score": MIN_SCORE - 0.01})]
+    monkeypatch.setattr("app.ask_notes.answer.retrieve", lambda q, m, f, k, u: mixed)
+    fake_replies(monkeypatch, model, GOOD)
+    ask("Did I need an X-ray?", "nomic-embed-text")
+    assert "The swelling" not in model[0][1]["content"]
+
+
+def test_model_saying_not_found_gives_not_found(model: Prompts, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_replies(monkeypatch, model, json.dumps({"found": False, "answer": "", "quotes": []}))
+    result = ask("What did I eat for breakfast?", "nomic-embed-text")
+    assert result.refused and result.answer == NOT_FOUND and len(model) == 1
+
+
+def test_unanswerable_questions_file_has_at_least_five() -> None:
+    questions = json.loads(Path("eval/ask_notes/unanswerable.json").read_text(encoding="utf-8"))
+    assert len(questions) >= 5 and all(isinstance(q, str) and q.strip() for q in questions)

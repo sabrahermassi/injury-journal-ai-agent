@@ -2,7 +2,7 @@
 
 import logging
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from app.ask_notes.retrieve import RetrievedChunk, retrieve
 from app.core.llm import chat
@@ -11,14 +11,20 @@ from app.semantic_search.search import SearchFilters
 logger = logging.getLogger(__name__)
 
 REFUSAL = "I couldn't find a reliable answer in your notes."
+NOT_FOUND = "I could not find that in your notes."
+
+# Chunks scoring below this are too weak to answer from. If none is left, we say NOT_FOUND
+# without calling the LLM. Chosen with app/ask_notes/evaluation/not_found.py.
+MIN_SCORE = 0.65
 
 SYSTEM = """You answer questions about the user's own injury notes.
-Use ONLY the numbered note passages you are given. Never use outside knowledge.
-Return JSON: {"quotes": [{"chunkId": 1, "text": "..."}], "answer": "..."}
+Use ONLY the numbered note passages you are given. Never use outside knowledge. Never guess.
+If the passages do not answer the question, return exactly: {"found": false, "answer": "", "quotes": []}
+Otherwise return JSON: {"found": true, "quotes": [{"chunkId": 1, "text": "..."}], "answer": "..."}
 - quotes: FIRST, copy the exact sentences that answer the question, word for word, with the passage number as chunkId.
 - answer: THEN answer in one full sentence that says the same thing as the quotes. Never just "yes" or "no".
 If a quote says something did NOT happen, the answer must say it did not happen.
-Every quote must appear exactly in its passage. Give at least one quote."""
+Every quote must appear exactly in its passage."""
 
 
 class Quote(BaseModel):
@@ -33,8 +39,15 @@ class Quote(BaseModel):
 class ModelAnswer(BaseModel):
     """The shape the model must return. Pydantic rejects anything else."""
 
-    answer: str = Field(min_length=1)
-    quotes: list[Quote] = Field(min_length=1)
+    found: bool = True  # False = the model says the passages don't answer the question
+    answer: str = ""
+    quotes: list[Quote] = []
+
+    @model_validator(mode="after")
+    def found_needs_answer_and_quotes(self) -> "ModelAnswer":
+        if self.found and (not self.answer.strip() or not self.quotes):
+            raise ValueError("when found is true, give an answer and at least one quote")
+        return self
 
 
 class Citation(BaseModel):
@@ -90,9 +103,10 @@ def ask(
     user_id: str = "demo",
 ) -> AskResult:
     """Retrieve passages, ask the model, check every quote. Retry once, then refuse."""
-    chunks = retrieve(question, embed_model, filters, top_k, user_id)
+    # Layer 1, the threshold: keep only chunks close enough in meaning. None left = not in the notes.
+    chunks = [c for c in retrieve(question, embed_model, filters, top_k, user_id) if c.score >= MIN_SCORE]
     if not chunks:
-        return AskResult(answer=REFUSAL, citations=[], refused=True)
+        return AskResult(answer=NOT_FOUND, citations=[], refused=True)
 
     messages = build_messages(question, chunks)
     for attempt in (1, 2):
@@ -102,6 +116,9 @@ def ask(
         except ValidationError as error:
             problem = f"Your reply was not valid JSON in the required shape: {error.errors()[0]['msg']}."
         else:
+            # Layer 2, the instruction: the model is allowed to say the passages don't answer.
+            if not result.found:
+                return AskResult(answer=NOT_FOUND, citations=[], refused=True)
             bad = find_bad_quotes(result.quotes, chunks)
             if not bad:
                 citations = [
