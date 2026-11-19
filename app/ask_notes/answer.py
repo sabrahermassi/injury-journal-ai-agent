@@ -63,9 +63,12 @@ def find_bad_quotes(quotes: list[Quote], chunks: list[RetrievedChunk]) -> list[Q
     """Quotes that are NOT word for word in the passage they point to (or point to no passage)."""
     bad = []
     for quote in quotes:
-        if not 1 <= quote.chunk_id <= len(chunks):
+        text = normalize(quote.text)
+        if len(text) < 5:
+            bad.append(quote)  # empty or almost empty after removing spaces: quotes nothing
+        elif not 1 <= quote.chunk_id <= len(chunks):
             bad.append(quote)  # points to a passage that doesn't exist
-        elif normalize(quote.text) not in normalize(chunks[quote.chunk_id - 1].text):
+        elif text not in normalize(chunks[quote.chunk_id - 1].text):
             bad.append(quote)  # the words are not in that passage
     return bad
 
