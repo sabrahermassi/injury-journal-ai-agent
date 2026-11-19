@@ -80,3 +80,12 @@ def test_bad_settings_are_rejected() -> None:
         chunk_note(1, "text", max_chars=0)
     with pytest.raises(ValueError):
         chunk_note(1, "text", overlap=-1)
+
+
+@pytest.mark.parametrize("text", ["...Pain.", "?!", "Knee.\n...\nBack!"])
+def test_punctuation_is_never_lost(text: str) -> None:
+    chunks = chunk_note(1, text)
+    check_offsets(text, chunks)
+    covered = "".join(c.text for c in chunks)
+    assert all(ch in covered for ch in text if not ch.isspace())
+    assert chunks[0].start == 0

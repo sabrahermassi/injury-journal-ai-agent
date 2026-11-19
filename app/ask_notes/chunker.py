@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 
 # A sentence: text up to and including . ! or ?, or up to a line break, or to the end of the note.
-SENTENCE = re.compile(r"[^.!?\n]+(?:[.!?]+|$)", re.MULTILINE)
+SENTENCE = re.compile(r"[^.!?\n]*(?:[.!?]+|$)", re.MULTILINE)
 
 
 @dataclass(frozen=True)
