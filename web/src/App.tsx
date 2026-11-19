@@ -1,8 +1,25 @@
+import { useState } from "react";
+import AskPage from "./ask-notes/AskPage";
 import SearchPage from "./semantic-search/SearchPage";
 
-// One web app for every project. Later projects add their page here (with a menu).
+type Page = "search" | "ask";
+
+// One web app for every project: a small menu, one page per project.
 function App() {
-  return <SearchPage />;
+  const [page, setPage] = useState<Page>("search");
+  return (
+    <>
+      <nav className="menu">
+        <button type="button" aria-pressed={page === "search"} onClick={() => setPage("search")}>
+          Search
+        </button>
+        <button type="button" aria-pressed={page === "ask"} onClick={() => setPage("ask")}>
+          Ask
+        </button>
+      </nav>
+      {page === "search" ? <SearchPage /> : <AskPage />}
+    </>
+  );
 }
 
 export default App;

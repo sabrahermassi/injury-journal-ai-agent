@@ -55,7 +55,7 @@ class Citation(BaseModel):
 
     note_id: int
     chunk_id: int
-    start: int  # the chunk's place in the note
+    start: int  # where the quote is in the note's text (the whole chunk if it can't be pinned down)
     end: int
     quote: str
 
@@ -95,6 +95,27 @@ def build_messages(question: str, chunks: list[RetrievedChunk]) -> list[dict[str
     ]
 
 
+def strong_chunks(
+    question: str, embed_model: str, filters: SearchFilters | None, top_k: int, user_id: str
+) -> list[RetrievedChunk]:
+    """Layer 1, the threshold: only chunks close enough in meaning. None left = not in the notes."""
+    return [c for c in retrieve(question, embed_model, filters, top_k, user_id) if c.score >= MIN_SCORE]
+
+
+def make_citations(quotes: list[Quote], chunks: list[RetrievedChunk]) -> list[Citation]:
+    """Checked quotes with their place in the note, so the page can highlight exactly the quoted words."""
+    citations = []
+    for q in quotes:
+        chunk = chunks[q.chunk_id - 1]
+        found_at = chunk.text.find(q.text)
+        if found_at >= 0:  # exact match: highlight just the quote
+            start, end = chunk.start + found_at, chunk.start + found_at + len(q.text)
+        else:  # matched only after normalizing spaces: highlight the whole chunk
+            start, end = chunk.start, chunk.end
+        citations.append(Citation(note_id=chunk.note_id, chunk_id=chunk.chunk_id, start=start, end=end, quote=q.text))
+    return citations
+
+
 def ask(
     question: str,
     embed_model: str,
@@ -103,8 +124,7 @@ def ask(
     user_id: str = "demo",
 ) -> AskResult:
     """Retrieve passages, ask the model, check every quote. Retry once, then refuse."""
-    # Layer 1, the threshold: keep only chunks close enough in meaning. None left = not in the notes.
-    chunks = [c for c in retrieve(question, embed_model, filters, top_k, user_id) if c.score >= MIN_SCORE]
+    chunks = strong_chunks(question, embed_model, filters, top_k, user_id)
     if not chunks:
         return AskResult(answer=NOT_FOUND, citations=[], refused=True)
 
@@ -121,16 +141,7 @@ def ask(
                 return AskResult(answer=NOT_FOUND, citations=[], refused=True)
             bad = find_bad_quotes(result.quotes, chunks)
             if not bad:
-                citations = [
-                    Citation(
-                        note_id=chunks[q.chunk_id - 1].note_id,
-                        chunk_id=chunks[q.chunk_id - 1].chunk_id,
-                        start=chunks[q.chunk_id - 1].start,
-                        end=chunks[q.chunk_id - 1].end,
-                        quote=q.text,
-                    )
-                    for q in result.quotes
-                ]
+                citations = make_citations(result.quotes, chunks)
                 return AskResult(answer=result.answer, citations=citations, refused=False)
             problem = "These quotes are not word for word in their passage: " + "; ".join(
                 f'[{q.chunk_id}] "{q.text}"' for q in bad

@@ -30,3 +30,26 @@
 body {
   margin: 0;
 }
+
+.menu {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 16px 0;
+}
+
+.menu button {
+  font: inherit;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.menu button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
