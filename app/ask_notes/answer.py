@@ -104,6 +104,24 @@ def strong_chunks(
     return [c for c in retrieve(question, embed_model, filters, top_k, user_id) if c.score >= MIN_SCORE]
 
 
+def scoped_chunks(
+    question: str, embed_model: str, filters: SearchFilters | None, top_k: int, user_id: str
+) -> tuple[Scope, list[RetrievedChunk]]:
+    """The input check, then the search. Returns the final scope and the chunks to answer from.
+
+    Urgent: stop at once, no search. Out of scope: still search, because the small model often calls
+    real note questions "out of scope" ("What was my 10 km time?"). If the notes clearly talk about it
+    (a chunk above MIN_SCORE), the question is in scope after all.
+    """
+    scope = check_question(question)
+    if scope == "urgent":
+        return scope, []
+    chunks = strong_chunks(question, embed_model, filters, top_k, user_id)
+    if scope == "out_of_scope" and not chunks:
+        return scope, []
+    return "in_scope", chunks
+
+
 def make_citations(quotes: list[Quote], chunks: list[RetrievedChunk]) -> list[Citation]:
     """Checked quotes with their place in the note, so the page can highlight exactly the quoted words."""
     citations = []
@@ -126,11 +144,9 @@ def ask(
     user_id: str = "demo",
 ) -> AskResult:
     """Check the question, retrieve passages, ask the model, check every quote. Retry once, then refuse."""
-    scope = check_question(question)
+    scope, chunks = scoped_chunks(question, embed_model, filters, top_k, user_id)
     if scope != "in_scope":
         return AskResult(answer=scope_message(scope), citations=[], refused=True, scope=scope)
-
-    chunks = strong_chunks(question, embed_model, filters, top_k, user_id)
     if not chunks:
         return AskResult(answer=NOT_FOUND, citations=[], refused=True)
 

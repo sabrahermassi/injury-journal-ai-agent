@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from app.ask_notes.input_check import check_question, scope_message
+from app.ask_notes.input_check import scope_message
 from app.ask_notes.answer import (
     NOT_FOUND,
     REFUSAL,
@@ -17,7 +17,7 @@ from app.ask_notes.answer import (
     build_messages,
     find_bad_quotes,
     make_citations,
-    strong_chunks,
+    scoped_chunks,
 )
 from app.core.llm import chat_stream
 from app.semantic_search.search import SearchFilters
@@ -66,15 +66,12 @@ def ask_stream(
     reset: throw away the answer shown so far (its quotes failed, trying again).
     done: the final, checked result (an answer with citations, or a refusal).
     """
-    yield {"type": "status", "text": "Checking the question"}
-    scope = check_question(question)
+    yield {"type": "status", "text": "Checking the question and searching your notes"}
+    scope, chunks = scoped_chunks(question, embed_model, filters, top_k, user_id)
     if scope != "in_scope":
         refusal = AskResult(answer=scope_message(scope), citations=[], refused=True, scope=scope)
         yield {"type": "done", "result": refusal.model_dump()}
         return
-
-    yield {"type": "status", "text": "Searching your notes"}
-    chunks = strong_chunks(question, embed_model, filters, top_k, user_id)
     if not chunks:
         yield {"type": "done", "result": AskResult(answer=NOT_FOUND, citations=[], refused=True).model_dump()}
         return

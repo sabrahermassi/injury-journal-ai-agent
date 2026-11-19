@@ -86,8 +86,7 @@ def test_escapes_are_decoded_and_a_cut_off_escape_waits() -> None:
 def test_good_answer_streams_then_ends_with_the_checked_result(replies: list[str]) -> None:
     replies.append(GOOD)
     events = events_of()
-    assert events[0] == {"type": "status", "text": "Checking the question"}
-    assert events[1] == {"type": "status", "text": "Searching your notes"}
+    assert events[0] == {"type": "status", "text": "Checking the question and searching your notes"}
     assert shown_answer(events) == 'No "X-ray" was needed.'
     done = events[-1]
     assert done["type"] == "done" and done["result"]["refused"] is False

@@ -90,6 +90,20 @@ Chose **300 characters with 1 sentence of overlap**: best on both scores, and th
 uv run --env-file .env python -m app.ask_notes.evaluation.chunking_experiment
 ```
 
+## Results
+
+`app/ask_notes/evaluation/answers.py` asks 20 test questions (`eval/ask_notes/answers.json`), each with its expected note and passage. Correct = answered, citing the right note, with a checked quote covering the expected passage.
+
+| Correct with verified quotes | Wrong | Refused |
+| ---------------------------- | ----- | ------- |
+| **14/20**                    | 3/20  | 3/20    |
+
+Refusals are safe failures (the quote check failed twice, or nothing close enough was found). The 3 wrong answers are small-model mistakes (it quoted the wrong sentence of the right note, or the wrong note): the next step is a reranker or a bigger model (Project 3).
+
+```bash
+uv run --env-file .env python -m app.ask_notes.evaluation.answers
+```
+
 ## Trade-offs
 
 | Choice                                              | Instead of                           | Why                                                                                                                                                             |
@@ -104,6 +118,7 @@ uv run --env-file .env python -m app.ask_notes.evaluation.chunking_experiment
 | Threshold 0.65 plus "found: false" in the prompt    | Threshold only                       | Scores overlap (answerable 0.69–0.83, unanswerable 0.51–0.70), so the threshold blocks most cheaply and the model catches the rest; 8/8 refused, 15/16 answered |
 | Stream the answer, check quotes at the end          | Wait for the checked answer          | Text appears at once; it's labelled "not checked" and is replaced or cleared if its quotes fail                                                                 |
 | Urgent word list first, then the model              | Model only                           | Emergencies are caught instantly and can't be argued away; costs one extra model call per question                                                              |
+| Notes overrule the model's "out of scope"           | Trust the input check                | The small model blocked 9 real questions (6/20 → 14/20 after the fix); out-of-scope questions now cost one search                                               |
 
 ## Run locally
 
@@ -137,5 +152,4 @@ docker compose exec db psql -U injury -d injury_ai -c "\dt" -c "\d chunks"
 - [x] Milestone 9: Not-found behavior
 - [x] Milestone 10: Chat UI
 - [x] Milestone 11: Input check
-- [ ] Milestone 12: 20 test questions
-- [ ] Milestone 13: Write your notes
+- [x] Milestone 12: 20 test questions
