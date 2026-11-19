@@ -16,18 +16,26 @@ class Chunk:
     text: str
 
 
+def trim(text: str, start: int, end: int) -> tuple[int, int]:
+    """Move start and end inwards past any spaces or line breaks."""
+    while start < end and text[start].isspace():
+        start += 1
+    while end > start and text[end - 1].isspace():
+        end -= 1
+    return start, end
+
+
 def sentence_spans(text: str, max_chars: int) -> list[tuple[int, int]]:
     """(start, end) of each sentence, without surrounding spaces. Sentences longer than max_chars are cut."""
     spans = []
     for match in SENTENCE.finditer(text):
-        start, end = match.start(), match.end()
-        while start < end and text[start].isspace():
-            start += 1
-        while end > start and text[end - 1].isspace():
-            end -= 1
+        start, end = trim(text, match.start(), match.end())
         while end - start > max_chars:
-            spans.append((start, start + max_chars))
-            start += max_chars
+            # Cut a piece of max_chars, trim it, and keep it only if something is left.
+            piece_start, piece_end = trim(text, start, start + max_chars)
+            if piece_start < piece_end:
+                spans.append((piece_start, piece_end))
+            start, end = trim(text, start + max_chars, end)
         if start < end:
             spans.append((start, end))
     return spans

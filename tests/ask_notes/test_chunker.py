@@ -89,3 +89,10 @@ def test_punctuation_is_never_lost(text: str) -> None:
     covered = "".join(c.text for c in chunks)
     assert all(ch in covered for ch in text if not ch.isspace())
     assert chunks[0].start == 0
+
+
+def test_cut_pieces_have_no_space_at_the_edges() -> None:
+    text = "a        b"
+    chunks = chunk_note(1, text, max_chars=3, overlap=0)
+    check_offsets(text, chunks)
+    assert [c.text for c in chunks] == ["a", "b"]
