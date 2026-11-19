@@ -13,8 +13,7 @@ RAG over long notes (P2), retrieval evals (P3), an agent with tools (P4), produc
 
 ## Layout
 
-- `app/`: Python AI service (FastAPI, port 8000). `app/core/` is shared; one folder per project (`semantic_search`, `ask_notes`). A project imports only from `core/`.
-- `api/src/`: TypeScript API (Express + Zod, port 3000), one folder per project. React only calls `/api/...`.
+- `app/`: Python AI service (FastAPI, port 8000). `app/core/` is shared; one folder per project (`semantic_search`, `ask_notes`). Later projects may reuse earlier projects' code (Ask Notes imports Project 1's extraction and filters); an earlier project never imports a later one.- `api/src/`: TypeScript API (Express + Zod, port 3000), one folder per project. React only calls `/api/...`.
 - `web/src/`: React + Vite (port 5173), one folder per project.
 - `tests/`, `eval/`, `data/`, `docs/`: same per-project folder names. Python folders `snake_case`, TS and docs `kebab-case`.
 
