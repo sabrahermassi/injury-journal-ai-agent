@@ -13,6 +13,14 @@ I am learning. Explain each problem and the concept behind it. Do not rewrite my
 - On GitHub: the pull request's diff.
 - The changed files in full, plus their direct callers. Do not survey the rest of the codebase.
 
+## CodeRabbit first
+
+Before reviewing, read the review comments already on the pull request.
+
+- **If CodeRabbit already reviewed** (it has comments on this PR): do not repeat anything it raised, even reworded and even if it isn't fixed yet. Report only new problems.
+- **If CodeRabbit has not reviewed** (no comments from it, for example because it hit its limit): do a full review.
+- Locally, with no pull request, do a full review.
+
 ## Check against
 
 - Privacy: note text, chunks or questions never appear in logs, error messages or responses they don't belong in. `data/` and `.env` are never committed.
@@ -42,4 +50,6 @@ One entry per finding:
 
 **[P0|P1] file:line** — What breaks. The input that breaks it. The concept to learn. What to change, in one sentence, without code.
 
-If nothing survives, reply `No issues found.` and stop. No summary, no praise.
+Keep every entry short, whether or not CodeRabbit ran.
+
+If nothing survives, reply `No issues found.` (or `Nothing new beyond CodeRabbit's comments.` if CodeRabbit already reviewed) and stop. No summary, no praise.
