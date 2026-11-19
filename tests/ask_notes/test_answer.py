@@ -82,6 +82,11 @@ def test_extra_spaces_and_line_breaks_still_match() -> None:
     assert find_bad_quotes([quote(1, "She said  no\nX-ray was needed")], CHUNKS) == []
 
 
+def test_quote_of_only_spaces_is_caught() -> None:
+    bad = quote(1, "     \n   ")
+    assert find_bad_quotes([bad], CHUNKS) == [bad]
+
+
 # --- the prompt ---
 
 
