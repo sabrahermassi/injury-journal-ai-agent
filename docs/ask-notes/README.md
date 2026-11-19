@@ -1,0 +1,94 @@
+# Project 2: Ask my notes
+
+Ask questions about your own long injury notes, and get answers that quote the exact passages.
+
+## Files
+
+| File                        | Job                                                      |
+| --------------------------- | -------------------------------------------------------- |
+| `docker-compose.yml`        | Runs Postgres 17 with pgvector                           |
+| `app/core/db.py`            | Opens a database connection (shared)                     |
+| `app/ask_notes/schema.sql`  | The `notes` and `chunks` tables, their rules and indexes |
+| `app/ask_notes/setup_db.py` | Creates the tables; safe to run again                    |
+| `tests/ask_notes/`          | Its tests (the database tests need Postgres running)     |
+
+## How it works
+
+Like every RAG app, it has two flows: **saving** notes and **asking** questions.
+
+### Saving a note
+
+```mermaid
+flowchart LR
+    N["Long note"]
+    X["Extract fields"]
+    C["Chunks"]
+    E["Embed chunks"]
+    D["Postgres"]
+
+    N --> X
+    N --> C
+    C --> E
+    X --> D
+    E --> D
+```
+
+- **Extract fields**: the LLM pulls out injury, body part, severity, cause and date (Project 1 code). They go in the `notes` table.
+- **Chunks**: the long note is split into small overlapping pieces, so search can find the exact passage.
+- **Embed chunks**: each piece becomes a vector. Pieces and vectors go in the `chunks` table.
+
+### Asking a question
+
+```mermaid
+flowchart LR
+    Q["Question"]
+    R["Top chunks"]
+    P["Prompt"]
+    L["LLM answer"]
+    V["Check quotes"]
+
+    Q --> R
+    R --> P
+    P --> L
+    L --> V
+```
+
+- **Top chunks**: pgvector finds the chunks closest in meaning, with the same filters as Project 1.
+- **Prompt**: the numbered chunks and the question go to the LLM, with the rule "answer only from these".
+- **Check quotes**: plain code checks that every quote really appears in its chunk. If not, the app refuses.
+- If the notes don't contain the answer, the app says "I could not find that in your notes".
+
+## Docs
+
+- [Postgres and pgvector](postgres-pgvector.md): the tables, keys, indexes, how HNSW search works, and the trade-offs.
+
+## Status
+
+- [x] Milestone 1: Postgres + pgvector
+- [ ] Milestone 2: Test notes
+- [ ] Milestone 3: Chunker with tests
+- [ ] Milestone 4: Ingest endpoint
+- [ ] Milestone 5: Resilient model calls
+- [ ] Milestone 6: Retrieval function
+- [ ] Milestone 7: Chunking experiment
+- [ ] Milestone 8: Grounded answer
+- [ ] Milestone 9: Not-found behavior
+- [ ] Milestone 10: Chat UI
+- [ ] Milestone 11: Input check
+- [ ] Milestone 12: 20 test questions
+- [ ] Milestone 13: Write your notes
+
+## Run locally
+
+Set up the whole app first (root README): it starts Postgres and creates the tables. Look inside the database:
+
+```bash
+docker compose exec db psql -U injury -d injury_ai -c "\dt" -c "\d chunks"
+```
+
+## Commands
+
+| Command                                                   | What it does                               |
+| --------------------------------------------------------- | ------------------------------------------ |
+| `uv run --env-file .env python -m app.ask_notes.setup_db` | Creates the tables (safe to repeat)        |
+| `uv run --env-file .env pytest -q tests/ask_notes`        | This project's tests, on the real database |

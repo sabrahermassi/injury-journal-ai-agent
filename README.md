@@ -1,187 +1,111 @@
-# Injury Semantic Search
+# Injury AI Assistant
 
-Search my injury notes by meaning, not just keywords.
+An AI assistant over personal injury notes, built in 5 projects. Each project adds one capability on top of the last:
+search notes by meaning, ask questions with cited answers, measure and improve retrieval, let an agent act with tools,
+and run it all reliably in production.
 
-## Architecture
-
-```mermaid
-flowchart LR
-    UI["React UI"]
-    API["TS API"]
-    AI["Python AI"]
-    OL["Ollama"]
-
-    UI -->|public endpoints| API
-    API -->|internal endpoints| AI
-    AI --> OL
-```
-
-- **React UI** (`web/`, TypeScript, React + Vite): the search page, localhost:5173
-- **TS API** (`api/`, TypeScript, Express + Zod): public endpoints, validates requests and Python's answers, localhost:3000
-- **Python AI** (`app/`, Python, FastAPI + Pydantic): extract, embed, search, localhost:8000
-- **Ollama**: runs the models locally, localhost:11434
-
-Each box is one service (one running program), all in this repo. They talk to each other over HTTP.
-
-## Projects
-
-This repo grows one project at a time. Each project has its own folder in `app/`, `tests/`, `eval/`, `data/` and `docs/`, and a git tag that shows the repo exactly as it was when the project was finished.
-
-| Project            | Python code            | Docs                    | Tag                                                                                                   |
-| ------------------ | ---------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
-| 1. Semantic search | `app/semantic_search/` | `docs/semantic-search/` | [p1-semantic-search](https://github.com/sabrahermassi/injury-semantic-search/tree/p1-semantic-search) |
-| 2. Ask my notes    | `app/ask_notes/`       | `docs/ask-notes/`       | in progress                                                                                           |
-
-### Folder structure
-
-```
-app/                    Python AI service (one FastAPI app, port 8000)
-  api.py                plugs in each project's router
-  core/                 shared by all projects: settings, LLM call, embeddings, cosine
-  semantic_search/      Project 1: extraction, indexing, search, its router and evaluation
-api/src/                TypeScript API (port 3000)
-  app.ts                plugs in each project's routes
-  semantic-search/      Project 1: routes, Zod schemas, Python client
-web/src/                React app (port 5173)
-  App.tsx               shows each project's page
-  semantic-search/      Project 1: the search page
-tests/core/  tests/semantic_search/  eval/semantic_search/  data/semantic_search/  docs/semantic-search/
-```
-
-Rules: a project only imports from `core/`, never from another project. Python folders use `snake_case`, TypeScript and docs folders use `kebab-case`.
-
-## How it works
-
-Every RAG app has two flows: **indexing** (saving data) and **querying** (searching it).
-
-### Indexing: when you save a note
+## The whole app
 
 ```mermaid
 flowchart TB
-    N["Messy note"]
+    UI["React UI"]
+    API["TS API"]
 
-    subgraph BOTH["SIDE BY SIDE"]
-        E["LLM extraction"]
-        V["Embeddings"]
+    subgraph P1["P1 Search"]
+        P1A["Extract fields"]
+        P1B["Embed notes"]
+        P1C["Hybrid search"]
+        P1A --> P1C
+        P1B --> P1C
     end
 
-    S["notes.json"]
+    subgraph P2["P2 Ask Notes"]
+        P2A["Chunk notes"]
+        P2B["pgvector"]
+        P2C["Retrieve"]
+        P2D["Cited answer"]
+        P2A --> P2B
+        P2B --> P2C
+        P2C --> P2D
+    end
 
-    N --> E
-    N --> V
-    E -->|fields| S
-    V -->|vector| S
+    subgraph P3["P3 RAG Evals"]
+        P3A["BM25"]
+        P3B["Fusion"]
+        P3C["Rerank"]
+        P3D["Metrics"]
+        P3A --> P3B
+        P3B --> P3C
+        P3C --> P3D
+    end
+
+    subgraph P4["P4 Agent"]
+        P4A["Tool loop"]
+        P4B["Memory"]
+        P4C["Text-to-SQL"]
+        P4D["Approvals"]
+        P4A --> P4B
+        P4A --> P4C
+        P4A --> P4D
+    end
+
+    subgraph P5["P5 Production"]
+        P5A["Auth"]
+        P5B["Queue worker"]
+        P5C["Cache"]
+        P5D["Tracing"]
+    end
+
+    OL["Ollama"]
+    DB["Postgres"]
+
+    UI --> API
+    API --> P5
+    P5 --> P4
+    P4 -->|tools| P1
+    P4 -->|tools| P2
+    P1 -->|filters| P2
+    P3 -->|improves| P2
+    P1 --> OL
+    P2 --> OL
+    P2 --> DB
+    P4 --> DB
 ```
 
-The same note goes to **both** models, side by side:
+- **React UI → TS API**: the only public entry. The TS API checks every request and calls the Python AI service.
+- **P5 Production** wraps everything: login, background processing of notes, a cache in front of answers, and tracing.
+- **P4 Agent** is what you talk to: it decides which tool to call. Its tools are P1 search, P2 ask, and safe database queries.
+- **P2 Ask Notes** answers questions from your notes with citations, using P1's filters, and P3's better retrieval.
+- **Ollama** runs the models locally; **Postgres + pgvector** stores notes, chunks and vectors.
 
-- **LLM extraction** (structured outputs): `"Twisted my knee running, pain 6"` becomes `{ body_part: "knee", severity: 6, cause: "running" }`, validated with Pydantic. Used for filters, display and charts.
-- **Embeddings**: the note text becomes a vector `[0.12, -0.48, 0.91, ...]`. Used for search by meaning.
-- Both are saved together as one record in `data/semantic_search/notes.json`.
+## The projects
 
-### Querying: when you search
+| Project            | What it adds                                                                     | Status                                                                                           | Docs                                                   |
+| ------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| 1. Semantic search | Extract fields from messy notes, search by meaning with filters                  | ✅ done ([tag](https://github.com/sabrahermassi/injury-semantic-search/tree/p1-semantic-search)) | [docs/semantic-search](docs/semantic-search/README.md) |
+| 2. Ask my notes    | Chunk long notes in Postgres + pgvector, answer questions with checked citations | 🚧 in progress                                                                                   | [docs/ask-notes](docs/ask-notes/README.md)             |
+| 3. RAG evals       | Keyword + vector search, fusion, reranking, measured with hit rate and MRR       | planned                                                                                          |                                                        |
+| 4. Agent           | Tool-calling loop with memory, guarded text-to-SQL and approvals                 | planned                                                                                          |                                                        |
+| 5. Production      | Auth, queue with retries, semantic cache, tracing, evals in CI                   | planned                                                                                          |                                                        |
 
-```mermaid
-flowchart LR
-    Q["Search"]
-    F["Filter fields"]
-    V["Embed search"]
-    C["Cosine score"]
-    M["Min score 0.54"]
-    T["Top 5 notes"]
+Each project's README explains how it works, its files, and its own commands.
 
-    Q --> F
-    F --> V
-    V --> C
-    C --> M
-    M --> T
+## Folder structure
+
+```
+app/        Python AI service (FastAPI, port 8000): core/ shared, one folder per project
+api/src/    TypeScript API (Express + Zod, port 3000): one folder per project
+web/src/    React app (Vite, port 5173): one folder per project
+tests/  eval/  data/  docs/   one folder per project, same names
 ```
 
-- **Search** plus optional filters, for example `"pain after running"` with `body_part = knee`.
-- **Filter fields** keeps only notes whose extracted fields match.
-- **Embed search** turns the search into a vector (not saved).
-- **Cosine score** compares it with each remaining note's vector.
-- **Min score 0.54** drops weak matches, so an off-topic search returns nothing.
-- **Top 5 notes** are shown with their fields, highest score first.
+Rule: a project imports only from `app/core/`, never from another project.
 
-## Learn more
+## Run the whole app
 
-- [Structured extraction](docs/semantic-search/structured-extraction.md): the LLM, how `messages` and roles work, and how a messy note becomes validated fields.
-- [Embedding model](docs/semantic-search/embedding-model.md): what vectors are, the rules for using them, how notes are embedded and saved, and cosine similarity.
-- [FastAPI endpoints](docs/semantic-search/fastapi-endpoints.md): the 3 endpoints, the `/docs` test page, and how the lock stops two saves from losing a note.
-- [Score threshold](docs/semantic-search/threshold.md): why search needs a minimum score, and how 0.54 was chosen by experiment.
-- [Search UI](docs/semantic-search/search-ui.md): how React, the TS API and Python connect, and what each layer checks.
+Requires Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js 22+, [Docker Desktop](https://www.docker.com/products/docker-desktop/) and [Ollama](https://ollama.com).
 
-## Status
-
-- [x] Milestone 1: Project skeleton (Python)
-- [x] Milestone 2: Structured extraction (Python)
-- [x] Milestone 3: Embed and persist
-- [x] Milestone 4: Cosine similarity with tests
-- [x] Milestone 5: search function (hybrid)
-- [x] Milestone 6: FastAPI endpoints
-- [x] Milestone 7: threshold experiment
-- [x] Milestone 8: React search UI
-
-## Tech stack
-
-| Tool           | Why                                         |
-| -------------- | ------------------------------------------- |
-| Python 3.12+   | The AI service                              |
-| uv             | Virtual environment and packages (like npm) |
-| Pydantic       | Validates the LLM's JSON output (like Zod)  |
-| pytest         | Tests                                       |
-| mypy           | Checks type hints (like tsc)                |
-| Ollama         | Runs the models locally, free               |
-| FastAPI        | HTTP endpoints for the TypeScript API       |
-| Node.js 22+    | Runs the TS API and the React dev server    |
-| Express + Zod  | The TS API, and its request validation      |
-| React + Vite   | The search page                             |
-| Vitest         | TS API tests (like pytest)                  |
-| GitHub Actions | Runs the tests and mypy on every push       |
-
-Models: `qwen2.5:3b` for extraction, `nomic-embed-text` for embeddings (both chosen by benchmark).
-
-## Extraction Model choice
-
-Each model extracted 5 fields from the same 10 labelled test notes (`eval/semantic_search/notes.json`), and `app/semantic_search/evaluation/extraction_benchmark.py` compared its answers to the expected ones.
-
-| Model          | Correct | Failed | Speed         |
-| -------------- | ------- | ------ | ------------- |
-| llama3.2       | 78%     | 0      | 1.2s/note     |
-| **qwen2.5:3b** | **86%** | **0**  | **1.2s/note** |
-| qwen2.5:7b     | 88%     | 0      | 2.4s/note     |
-
-Chose **qwen2.5:3b**: only 1 field fewer than the 7B model (43 vs 44 out of 50), twice as fast, and smaller.
-
-To run the benchmark yourself, pull all 3 models, then run it:
-
-```bash
-ollama pull llama3.2
-ollama pull qwen2.5:3b
-ollama pull qwen2.5:7b
-uv run --env-file .env python -m app.semantic_search.evaluation.extraction_benchmark
-```
-
-## Embedding model choice
-
-12 test questions (`eval/semantic_search/queries.json`) were searched against the 10 test notes with each model and each text option, using `app/semantic_search/evaluation/embedding_benchmark.py`. Top-1: the right note came first. Top-3: it was in the first 3.
-
-| Model                | Text          | Top-1     | Top-3     |
-| -------------------- | ------------- | --------- | --------- |
-| **nomic-embed-text** | **raw**       | **11/12** | **12/12** |
-| nomic-embed-text     | both          | 12/12     | 12/12     |
-| mxbai-embed-large    | all 3         | 12/12     | 12/12     |
-| all-minilm           | raw           | 11/12     | 12/12     |
-| all-minilm           | fields / both | 12/12     | 12/12     |
-
-All options found the right note in the top 3, so the test set is too small to separate them. Chose **nomic-embed-text with the raw note**: same accuracy, small (274 MB), handles long notes, and embedding the raw note keeps search independent of extraction mistakes. To be rerun with real notes.
-
-To run it yourself: `ollama pull mxbai-embed-large`, `ollama pull all-minilm`, then `uv run --env-file .env python -m app.semantic_search.evaluation.embedding_benchmark`.
-
-## Run locally
-
-Requires Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js 22+ and [Ollama](https://ollama.com) running locally.
+**Set up once**
 
 ```bash
 git clone https://github.com/sabrahermassi/injury-semantic-search.git
@@ -191,80 +115,34 @@ uv sync
 (cd web && npm install)
 ollama pull qwen2.5:3b
 ollama pull nomic-embed-text
+cp .env.example .env
+docker compose up -d
+uv run --env-file .env python -m app.ask_notes.setup_db
 ```
 
-Create a `.env` file in the project root:
-
-```
-APP_NAME=injury-semantic-search
-OLLAMA_URL=http://localhost:11434
-LLM_MODEL=qwen2.5:3b
-EMBED_MODEL=nomic-embed-text
-```
-
-- `OLLAMA_URL`: where Ollama runs (default port 11434).
-- `LLM_MODEL`: the model used for extraction.
-- `EMBED_MODEL`: the model used for embeddings.
-
-Run the app (always with `-m`, from the project root):
-
-```bash
-uv run --env-file .env python -m app.main
-```
-
-### Index your notes
-
-Create `data/semantic_search/raw_notes.json`: a UTF-8 JSON array of strings, one note each. `data/` is in `.gitignore`, so personal health notes are never committed.
-
-```json
-["knee pain after running", "lower back hurts after sitting all day"]
-```
-
-Then run:
-
-```bash
-uv run --env-file .env python -m app.semantic_search.index
-```
-
-Each note is extracted and embedded, then saved in `data/semantic_search/notes.json`.
-
-### Start the API
-
-```bash
-uv run --env-file .env fastapi dev app/api.py
-```
-
-Open http://localhost:8000/docs to try `POST /extract`, `POST /index` and `POST /search` in the browser. For example, `/search` with:
-
-```json
-{ "query": "running injury", "filters": { "body_part": "knee" }, "top_k": 3 }
-```
-
-### Start the search page
-
-Index your notes first, then run the 3 services, each in its own terminal:
+**Start**, each in its own terminal:
 
 | Terminal | Command                                         | Runs                 |
 | -------- | ----------------------------------------------- | -------------------- |
-| 1        | `uv run --env-file .env fastapi dev app/api.py` | Python AI, port 8000 |
-| 2        | `cd api && npm run dev`                         | TS API, port 3000    |
-| 3        | `cd web && npm run dev`                         | React, port 5173     |
+| 1        | `docker compose up -d`                          | Postgres, port 5432  |
+| 2        | `uv run --env-file .env fastapi dev app/api.py` | Python AI, port 8000 |
+| 3        | `cd api && npm run dev`                         | TS API, port 3000    |
+| 4        | `cd web && npm run dev`                         | React, port 5173     |
 
-Open http://localhost:5173: search, filter by body part, minimum severity and date range, and see each note with its score and extracted fields.
+Open http://localhost:5173.
 
 ## Commands
 
-| Command                                                                                | What it does                         |
-| -------------------------------------------------------------------------------------- | ------------------------------------ |
-| `uv run --env-file .env python -m app.main`                                            | Runs the app                         |
-| `uv run --env-file .env python -m app.semantic_search.index`                           | Extracts, embeds and saves new notes |
-| `uv run --env-file .env fastapi dev app/api.py`                                        | Starts the API on localhost:8000     |
-| `uv run pytest`                                                                        | Runs the tests                       |
-| `uv run mypy app tests`                                                                | Checks types                         |
-| `uv run --env-file .env python -m app.semantic_search.evaluation.extraction_benchmark` | Runs the extraction benchmark        |
-| `uv run --env-file .env python -m app.semantic_search.evaluation.embedding_benchmark`  | Runs the embedding benchmark         |
-| `uv run --env-file .env python -m app.semantic_search.evaluation.threshold`            | Runs the threshold experiment        |
-| `cd api && npm run dev`                                                                | Starts the TS API on localhost:3000  |
-| `cd api && npm test`                                                                   | Runs the TS API tests                |
-| `cd api && npm run typecheck`                                                          | Checks the TS API types              |
-| `cd web && npm run dev`                                                                | Starts the search page on :5173      |
+| Command                                        | What it does                              |
+| ---------------------------------------------- | ----------------------------------------- |
+| `docker compose up -d` / `docker compose down` | Start / stop Postgres (data is kept)      |
+| `uv run --env-file .env pytest -q`             | All Python tests, database tests included |
+| `uv run mypy app tests`                        | Python type checks                        |
+| `cd api && npm test && npm run typecheck`      | TS API tests and type checks              |
+| `cd web && npm run build && npm run lint`      | React build and lint                      |
+
+Project-specific commands (benchmarks, indexing, experiments) are in each project's README.
+
+## Tech stack
+
+Python (FastAPI, Pydantic, uv, pytest, mypy) · TypeScript (Express, Zod, React, Vite, Vitest) · Postgres 17 + pgvector (psycopg 3) · Ollama (`qwen2.5:3b`, `nomic-embed-text`) · Docker Compose · GitHub Actions
