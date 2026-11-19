@@ -4,13 +4,14 @@ Ask questions about your own long injury notes, and get answers that quote the e
 
 ## Files
 
-| File                        | Job                                                      |
-| --------------------------- | -------------------------------------------------------- |
-| `docker-compose.yml`        | Runs Postgres 17 with pgvector                           |
-| `app/core/db.py`            | Opens a database connection (shared)                     |
-| `app/ask_notes/schema.sql`  | The `notes` and `chunks` tables, their rules and indexes |
-| `app/ask_notes/setup_db.py` | Creates the tables; safe to run again                    |
-| `tests/ask_notes/`          | Its tests (the database tests need Postgres running)     |
+| File                        | Job                                                         |
+| --------------------------- | ----------------------------------------------------------- |
+| `docker-compose.yml`        | Runs Postgres 17 with pgvector                              |
+| `app/core/db.py`            | Opens a database connection (shared)                        |
+| `app/ask_notes/schema.sql`  | The `notes` and `chunks` tables, their rules and indexes    |
+| `app/ask_notes/setup_db.py` | Creates the tables; safe to run again                       |
+| `tests/ask_notes/`          | Its tests (the database tests need Postgres running)        |
+| `app/ask_notes/chunker.py`  | Splits a note into overlapping sentence chunks with offsets |
 
 ## How it works
 
@@ -65,8 +66,8 @@ flowchart LR
 ## Status
 
 - [x] Milestone 1: Postgres + pgvector
-- [ ] Milestone 2: Test notes
-- [ ] Milestone 3: Chunker with tests
+- [x] Milestone 2: Test notes
+- [x] Milestone 3: Chunker with tests
 - [ ] Milestone 4: Ingest endpoint
 - [ ] Milestone 5: Resilient model calls
 - [ ] Milestone 6: Retrieval function
