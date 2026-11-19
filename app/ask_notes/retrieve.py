@@ -28,19 +28,28 @@ def like_pattern(text: str) -> str:
     return f"%{escaped}%"
 
 
+# Step 1 (eligible) keeps only this user's chunks that pass the filters. MATERIALIZED makes Postgres
+# finish that step first, so step 2 ranks every eligible chunk exactly. Without it, Postgres can use the
+# HNSW index, which looks at only ~40 nearest chunks and filters afterwards: if those belong to other users
+# or fail the filters, you get fewer than top_k results, or none.
 SQL = """
-SELECT c.id, c.note_id, c.position, c.start_offset, c.end_offset, c.text,
-       1 - (c.embedding <=> %(question)s::vector) AS score,
-       n.body_part, n.severity, n.note_date
-FROM chunks c
-JOIN notes n ON n.id = c.note_id
-WHERE n.user_id = %(user_id)s
-  AND c.embed_model = %(embed_model)s
-  AND (%(body_part)s::text IS NULL OR n.body_part ILIKE %(body_part)s)
-  AND (%(min_severity)s::int IS NULL OR n.severity >= %(min_severity)s)
-  AND (%(date_from)s::date IS NULL OR n.note_date >= %(date_from)s)
-  AND (%(date_to)s::date IS NULL OR n.note_date <= %(date_to)s)
-ORDER BY c.embedding <=> %(question)s::vector
+WITH eligible AS MATERIALIZED (
+    SELECT c.id, c.note_id, c.position, c.start_offset, c.end_offset, c.text, c.embedding,
+           n.body_part, n.severity, n.note_date
+    FROM chunks c
+    JOIN notes n ON n.id = c.note_id
+    WHERE n.user_id = %(user_id)s
+      AND c.embed_model = %(embed_model)s
+      AND (%(body_part)s::text IS NULL OR n.body_part ILIKE %(body_part)s)
+      AND (%(min_severity)s::int IS NULL OR n.severity >= %(min_severity)s)
+      AND (%(date_from)s::date IS NULL OR n.note_date >= %(date_from)s)
+      AND (%(date_to)s::date IS NULL OR n.note_date <= %(date_to)s)
+)
+SELECT id, note_id, position, start_offset, end_offset, text,
+       1 - (embedding <=> %(question)s::vector) AS score,
+       body_part, severity, note_date
+FROM eligible
+ORDER BY embedding <=> %(question)s::vector
 LIMIT %(top_k)s
 """
 

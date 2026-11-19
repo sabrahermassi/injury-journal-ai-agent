@@ -114,3 +114,27 @@ def test_retrieve_endpoint(user: str, monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(body) == 1 and body[0]["text"] == "knee pain after running" and body[0]["note_date"] == "2026-03-03"
     assert client.post("/retrieve", json={"question": "knee", "top_k": 0}).status_code == 422
     assert client.post("/retrieve", json={"question": "  "}).status_code == 422
+
+
+def test_filters_still_return_top_k_when_nearer_chunks_are_excluded(user: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Force Postgres to use the HNSW index with the smallest search list, the worst case for filtered search.
+    monkeypatch.setenv("PGOPTIONS", "-c enable_seqscan=off -c enable_sort=off -c hnsw.ef_search=1")
+    other_user = f"test-{uuid.uuid4()}"
+    with connect() as conn:
+        for i in range(30):  # 30 chunks of someone else, all closer to the question than ours
+            row = conn.execute(
+                "INSERT INTO notes (user_id, content_hash, text) VALUES (%s, %s, 'x') RETURNING id",
+                (other_user, str(uuid.uuid4())),
+            ).fetchone()
+            assert row is not None
+            conn.execute(
+                "INSERT INTO chunks (note_id, position, start_offset, end_offset, text, embedding, embed_model)"
+                " VALUES (%s, 0, 0, 1, 'x', %s::vector, %s)",
+                (row[0], str(vector(1.0, 0.001 * i)), MODEL),
+            )
+    try:
+        assert len(texts(user, top_k=3)) == 3
+        assert texts(user, SearchFilters(body_part="finger")) == ["cut finger chopping onions"]
+    finally:
+        with connect() as conn:
+            conn.execute("DELETE FROM notes WHERE user_id = %s", (other_user,))
