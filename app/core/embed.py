@@ -1,5 +1,6 @@
 from ollama import Client
 
+from app.core import model_call
 from app.core.env import require_env
 
 # Some embedding models want a prefix that says what the text is for:
@@ -15,8 +16,8 @@ def _prefixes(model: str) -> tuple[str, str]:
 
 
 def _embed(texts: list[str], model: str) -> list[list[float]]:
-    client = Client(host=require_env("OLLAMA_URL"))
-    response = client.embed(model=model, input=texts)
+    client = Client(host=require_env("OLLAMA_URL"), timeout=model_call.TIMEOUT_SECONDS)
+    response = model_call.call_model(lambda: client.embed(model=model, input=texts), "embedding")
     return [list(vector) for vector in response.embeddings]
 
 
