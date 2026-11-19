@@ -1,11 +1,11 @@
 # Postgres and pgvector
 
-|                  |                                                                           |
-| ---------------- | ------------------------------------------------------------------------- |
-| **Database**     | Postgres 17 with the pgvector extension, in Docker (`docker-compose.yml`) |
-| **Driver**       | psycopg 3, with plain SQL                                                 |
-| **Tables**       | `notes` and `chunks` (`app/ask_notes/schema.sql`)                         |
-| **Why**          | One real database for notes, extracted fields and vectors                 |
+|              |                                                                           |
+| ------------ | ------------------------------------------------------------------------- |
+| **Database** | Postgres 17 with the pgvector extension, in Docker (`docker-compose.yml`) |
+| **Driver**   | psycopg 3, with plain SQL                                                 |
+| **Tables**   | `notes` and `chunks` (`app/ask_notes/schema.sql`)                         |
+| **Why**      | One real database for notes, extracted fields and vectors                 |
 
 ## Part 1: The general idea
 
@@ -21,24 +21,24 @@ It's turned on once per database with `CREATE EXTENSION vector;`.
 
 ### Distance operators
 
-| Operator | Distance              | Note                                    |
-| -------- | --------------------- | --------------------------------------- |
-| `<=>`    | **Cosine distance**   | **Ours.** 0 = same direction            |
-| `<->`    | Euclidean (L2)        | Straight-line distance                  |
-| `<#>`    | Inner product         | For vectors already normalized          |
+| Operator | Distance            | Note                           |
+| -------- | ------------------- | ------------------------------ |
+| `<=>`    | **Cosine distance** | **Ours.** 0 = same direction   |
+| `<->`    | Euclidean (L2)      | Straight-line distance         |
+| `<#>`    | Inner product       | For vectors already normalized |
 
 Cosine **similarity** = 1 − cosine **distance**. So "similarity at least 0.54" means "distance at most 0.46".
 
 ### Keys and rules
 
-| Word                    | Plain English                                                     | Example in our tables                          |
-| ----------------------- | ----------------------------------------------------------------- | ---------------------------------------------- |
-| Primary key             | A unique number for each row, picked by Postgres (`BIGSERIAL`)    | `notes.id`, `chunks.id`                        |
-| Foreign key             | A column that points to a row in another table                    | `chunks.note_id` points to `notes.id`          |
-| `ON DELETE CASCADE`     | Deleting the row pointed to also deletes the rows pointing to it  | Delete a note, its chunks go too               |
-| `UNIQUE`                | This value (or combination) can't appear twice                    | `(user_id, content_hash)`: no duplicate notes  |
-| `CHECK`                 | The value must pass a test                                        | `severity BETWEEN 1 AND 10`                    |
-| `NOT NULL` / `DEFAULT`  | Must have a value / value used when none is given                 | `created_at DEFAULT now()`                     |
+| Word                   | Plain English                                                    | Example in our tables                         |
+| ---------------------- | ---------------------------------------------------------------- | --------------------------------------------- |
+| Primary key            | A unique number for each row, picked by Postgres (`BIGSERIAL`)   | `notes.id`, `chunks.id`                       |
+| Foreign key            | A column that points to a row in another table                   | `chunks.note_id` points to `notes.id`         |
+| `ON DELETE CASCADE`    | Deleting the row pointed to also deletes the rows pointing to it | Delete a note, its chunks go too              |
+| `UNIQUE`               | This value (or combination) can't appear twice                   | `(user_id, content_hash)`: no duplicate notes |
+| `CHECK`                | The value must pass a test                                       | `severity BETWEEN 1 AND 10`                   |
+| `NOT NULL` / `DEFAULT` | Must have a value / value used when none is given                | `created_at DEFAULT now()`                    |
 
 The database enforces these rules, so even buggy code can't save bad data.
 
@@ -70,23 +70,23 @@ flowchart LR
 CREATE INDEX IF NOT EXISTS chunks_embedding_idx ON chunks USING hnsw (embedding vector_cosine_ops);
 ```
 
-| Part                | Who decides                                                      |
-| ------------------- | ---------------------------------------------------------------- |
-| `chunks_embedding_idx` | We named it (table_column_idx)                                |
-| `USING hnsw`        | Fixed: the index type from pgvector                              |
-| `embedding`         | The column to index                                              |
-| `vector_cosine_ops` | Fixed name from pgvector: build the index for cosine distance (`<=>`). The query must use the same operator, or the index is ignored |
+| Part                   | Who decides                                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `chunks_embedding_idx` | We named it (table_column_idx)                                                                                                       |
+| `USING hnsw`           | Fixed: the index type from pgvector                                                                                                  |
+| `embedding`            | The column to index                                                                                                                  |
+| `vector_cosine_ops`    | Fixed name from pgvector: build the index for cosine distance (`<=>`). The query must use the same operator, or the index is ignored |
 
 ### What the index stores
 
 A hidden table with one line per chunk:
 
-| Stored          | Example                        |
-| --------------- | ------------------------------ |
-| A copy of the vector | [0.9, 0.1, ...]           |
-| The row's address in `chunks` | row 1            |
-| Its closest neighbours | B, C                    |
-| Its layers      | bottom, sometimes also top     |
+| Stored                        | Example                    |
+| ----------------------------- | -------------------------- |
+| A copy of the vector          | [0.9, 0.1, ...]            |
+| The row's address in `chunks` | row 1                      |
+| Its closest neighbours        | B, C                       |
+| Its layers                    | bottom, sometimes also top |
 
 The top layer has few vectors with long links (a highway); the bottom layer has every vector with short links (local streets).
 
@@ -134,31 +134,31 @@ flowchart LR
 
 ## Trade-offs
 
-| Choice                          | Instead of                       | Why                                                              |
-| ------------------------------- | -------------------------------- | ---------------------------------------------------------------- |
-| HNSW index                      | Exact search                     | Fast search; costs a small miss rate, slower saves and disk space |
-| pgvector inside Postgres        | A separate vector database       | One system; filters and vector search in one query               |
-| psycopg + plain SQL             | An ORM (SQLAlchemy)              | You see and learn the real SQL                                   |
-| Extracted fields as columns     | A JSON column                    | Indexed filters and database checks                              |
-| `user_id` from day one          | Adding it with login later       | No migration later                                               |
+| Choice                      | Instead of                 | Why                                                               |
+| --------------------------- | -------------------------- | ----------------------------------------------------------------- |
+| HNSW index                  | Exact search               | Fast search; costs a small miss rate, slower saves and disk space |
+| pgvector inside Postgres    | A separate vector database | One system; filters and vector search in one query                |
+| psycopg + plain SQL         | An ORM (SQLAlchemy)        | You see and learn the real SQL                                    |
+| Extracted fields as columns | A JSON column              | Indexed filters and database checks                               |
+| `user_id` from day one      | Adding it with login later | No migration later                                                |
 
 ## In our code
 
-| File                          | Job                                                             |
-| ----------------------------- | --------------------------------------------------------------- |
-| `docker-compose.yml`          | Runs Postgres 17 with pgvector, data kept in a volume           |
-| `app/core/db.py`              | `connect()`: opens a connection and registers the vector type   |
-| `app/ask_notes/schema.sql`    | The tables, rules and indexes                                   |
-| `app/ask_notes/setup_db.py`   | Runs `schema.sql`; safe to run again                            |
-| `tests/ask_notes/test_db.py`  | 5 tests on a real database, rolled back after each              |
+| File                         | Job                                                           |
+| ---------------------------- | ------------------------------------------------------------- |
+| `docker-compose.yml`         | Runs Postgres 17 with pgvector, data kept in a volume         |
+| `app/core/db.py`             | `connect()`: opens a connection and registers the vector type |
+| `app/ask_notes/schema.sql`   | The tables, rules and indexes                                 |
+| `app/ask_notes/setup_db.py`  | Runs `schema.sql`; safe to run again                          |
+| `tests/ask_notes/test_db.py` | 5 tests on a real database, rolled back after each            |
 
-| Test                                   | Checks                                  |
-| -------------------------------------- | --------------------------------------- |
-| closest chunks come first              | `<=>` orders by cosine distance         |
-| same note cannot be saved twice        | `UNIQUE (user_id, content_hash)`        |
-| two users can save the same note       | the uniqueness is per user              |
-| deleting a note deletes its chunks     | `ON DELETE CASCADE`                     |
-| severity must be between 1 and 10      | `CHECK`                                 |
+| Test                               | Checks                           |
+| ---------------------------------- | -------------------------------- |
+| closest chunks come first          | `<=>` orders by cosine distance  |
+| same note cannot be saved twice    | `UNIQUE (user_id, content_hash)` |
+| two users can save the same note   | the uniqueness is per user       |
+| deleting a note deletes its chunks | `ON DELETE CASCADE`              |
+| severity must be between 1 and 10  | `CHECK`                          |
 
 Look inside the database:
 
