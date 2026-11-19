@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.ask_notes.ingest import IngestResult, ingest_note
 from app.core.env import require_env
@@ -10,6 +10,14 @@ router = APIRouter(tags=["ask notes"])
 
 class NoteRequest(BaseModel):
     text: str = Field(min_length=1, max_length=20_000, pattern=r"\S")  # at least one non-space character
+
+    @field_validator("text")
+    @classmethod
+    def no_nul_character(cls, text: str) -> str:
+        # Postgres text columns can't store the NUL character: reject it here with a 422, not a 500 later.
+        if "\x00" in text:
+            raise ValueError("text must not contain the NUL character")
+        return text
 
 
 @router.post("/notes")

@@ -87,6 +87,6 @@ def test_post_notes_endpoint(calls: dict[str, int]) -> None:
     assert again.json() == {**first.json(), "created": False}
 
 
-@pytest.mark.parametrize("body", [{"text": ""}, {"text": "   \n  "}, {"text": "x" * 20_001}, {}])
+@pytest.mark.parametrize("body", [{"text": ""}, {"text": "   \n  "}, {"text": "x" * 20_001}, {"text": "knee\x00pain"}, {}])
 def test_post_notes_rejects_bad_input(body: dict[str, str]) -> None:
     assert TestClient(app).post("/notes", json=body).status_code == 422
