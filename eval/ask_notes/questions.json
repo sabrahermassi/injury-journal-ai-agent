@@ -1,0 +1,39 @@
+[
+  { "question": "How did I treat the cut on my finger?", "relevant": ["n03"] },
+  {
+    "question": "Did the doctor take an X-ray of my sprained ankle?",
+    "relevant": ["n06"]
+  },
+  {
+    "question": "What exercises did the physio give me for my shoulder?",
+    "relevant": ["n10"]
+  },
+  {
+    "question": "What happened when I helped my friend move a sofa?",
+    "relevant": ["n12"]
+  },
+  { "question": "How did I scrape my forearm?", "relevant": ["n11"] },
+  { "question": "What was my time in the 10 km race?", "relevant": ["n13"] },
+  { "question": "Did an insect sting me?", "relevant": ["n14"] },
+  { "question": "What did the second wrist X-ray show?", "relevant": ["n19"] },
+  { "question": "How did I hurt my wrist at the beach?", "relevant": ["n18"] },
+  {
+    "question": "What did I do after stubbing my little toe?",
+    "relevant": ["n15"]
+  },
+  {
+    "question": "Why do my neck and shoulders feel stiff at work?",
+    "relevant": ["n16"]
+  },
+  { "question": "Did I bump my head on something?", "relevant": ["n09"] },
+  {
+    "question": "What caused my headache behind the eyes?",
+    "relevant": ["n07"]
+  },
+  {
+    "question": "How long can I stand on my left leg after the sprain?",
+    "relevant": ["n07", "n08"]
+  },
+  { "question": "What was my half marathon time?", "relevant": ["n20"] },
+  { "question": "How did I hurt my lower back in March?", "relevant": ["n02"] }
+]

@@ -41,7 +41,9 @@ def sentence_spans(text: str, max_chars: int) -> list[tuple[int, int]]:
     return spans
 
 
-def chunk_note(note_id: int, text: str, max_chars: int = 600, overlap: int = 1) -> list[Chunk]:
+# 300 characters with 1 sentence of overlap won the chunking experiment
+# (app/ask_notes/evaluation/chunking_experiment.py): top-1 13/16, top-3 16/16.
+def chunk_note(note_id: int, text: str, max_chars: int = 300, overlap: int = 1) -> list[Chunk]:
     """Group whole sentences into chunks of at most max_chars.
 
     Overlap is best effort: each chunk starts `overlap` sentences before the end of the one before,
