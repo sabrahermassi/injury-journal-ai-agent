@@ -7,8 +7,9 @@ RAG over long notes (P2), retrieval evals (P3), an agent with tools (P4), produc
 
 - I am learning. Explain concepts in plain English. Give full files, not partial edits, and the expected output of each step.
 - Don't change the project plan or scope unless I ask.
-- Don't install dependencies, commit or push unless I ask.
-- Never read, print, log or commit `data/` or `.env`. Notes are health data: log a note's id, never its text.
+- Don't add, remove or upgrade dependencies (`uv add`, `npm install <package>`) unless I ask. Installing what the lock files already list (`uv sync`, `npm ci`, or `uv run` doing it automatically) is fine.
+- Don't commit or push unless I ask.
+- Never open, print, log or commit `.env` or files in `data/`. Running the app with `--env-file .env` is fine: the app reads them, you don't. Notes are health data: log a note's id, never its text.
 
 ## Layout
 
