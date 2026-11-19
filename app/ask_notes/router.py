@@ -2,7 +2,9 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field, field_validator
 
 from app.ask_notes.ingest import IngestResult, ingest_note
+from app.ask_notes.retrieve import RetrievedChunk, retrieve
 from app.core.env import require_env
+from app.semantic_search.search import SearchFilters
 
 # Project 2 endpoints. app/api.py plugs this router into the one FastAPI app.
 router = APIRouter(tags=["ask notes"])
@@ -20,7 +22,19 @@ class NoteRequest(BaseModel):
         return text
 
 
+class RetrieveRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=1_000, pattern=r"\S")
+    filters: SearchFilters | None = None
+    top_k: int = Field(default=5, ge=1, le=20)
+
+
 @router.post("/notes")
 def save_note_endpoint(request: NoteRequest) -> IngestResult:
     """Save a note: extract its fields, chunk it, embed the chunks. Saving it again changes nothing."""
     return ingest_note(request.text, require_env("EMBED_MODEL"))
+
+
+@router.post("/retrieve")
+def retrieve_endpoint(request: RetrieveRequest) -> list[RetrievedChunk]:
+    """Question in, the closest chunks out (best first), filtered by body part, severity and dates."""
+    return retrieve(request.question, require_env("EMBED_MODEL"), request.filters, request.top_k)
