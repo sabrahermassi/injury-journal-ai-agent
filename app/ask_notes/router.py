@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, Field, field_validator
 
+from app.ask_notes.answer import AskResult, ask
 from app.ask_notes.ingest import IngestResult, ingest_note
 from app.ask_notes.retrieve import RetrievedChunk, retrieve
 from app.core.env import require_env
@@ -54,3 +55,9 @@ def save_note_endpoint(request: NoteRequest) -> IngestResult:
 def retrieve_endpoint(request: RetrieveRequest) -> list[RetrievedChunk]:
     """Question in, the closest chunks out (best first), filtered by body part, severity and dates."""
     return retrieve(request.question, require_env("EMBED_MODEL"), request.filters, request.top_k)
+
+
+@router.post("/ask")
+def ask_endpoint(request: RetrieveRequest) -> AskResult:
+    """Question in, an answer with checked quotes out, or a refusal if no quote can be verified."""
+    return ask(request.question, require_env("EMBED_MODEL"), request.filters, request.top_k)

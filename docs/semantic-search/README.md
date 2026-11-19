@@ -109,19 +109,16 @@ To run it yourself: `ollama pull mxbai-embed-large`, `ollama pull all-minilm`, t
 
 ## Trade-offs
 
-| Choice                       | Instead of                   | Why                                                                            |
-| ---------------------------- | ---------------------------- | ------------------------------------------------------------------------------ |
-| Local Ollama                 | A cloud API (OpenAI, Claude) | Free and private for health data; slower, weaker models                        |
-| qwen2.5:3b                   | qwen2.5:7b                   | Twice as fast for 1 fewer correct field (43 vs 44 of 50)                       |
-| nomic-embed-text             | Bigger embedding models      | Small (274 MB), same accuracy on the test set; the set is too small to be sure |
-| Embed the raw note           | Embed the extracted fields   | Search still works when extraction makes a mistake                             |
-| LLM extraction               | A form or regex              | Works on messy text; can be wrong, so Pydantic validation and a retry          |
-| JSON file                    | A database                   | Simple to build; doesn't scale, so Project 2 moved to Postgres                 |
-| Compare every note in Python | A vector index               | Fine for hundreds of notes; too slow for millions                              |
-| Filters + cosine (hybrid)    | Meaning only                 | More precise; depends on the extracted fields being right                      |
-| Threshold 0.54               | No threshold                 | Blocks off-topic results; can drop a weak true match (precision vs recall)     |
-| Python AI service + TS API   | One service                  | Each language does what it's best at; more services to run                     |
-| A lock in Python             | Database transactions        | Simple; only works with one process                                            |
+| Choice                                  | Instead of                                       | Why                                                                                                |
+| --------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Local Ollama                            | A cloud API (OpenAI, Claude)                     | Free and private for health data; slower, weaker models                                            |
+| qwen2.5:3b                              | qwen2.5:7b                                       | Twice as fast for 1 fewer correct field (43 vs 44 of 50)                                           |
+| nomic-embed-text on the raw note        | Bigger models, or embedding the extracted fields | Small (274 MB), same accuracy on the test set; search still works when extraction makes a mistake  |
+| LLM extraction                          | A form or regex                                  | Works on messy text; can be wrong, so Pydantic validation and a retry                              |
+| JSON file, compare every note in Python | A database with a vector index                   | Simple to build; fine for hundreds of notes, too slow for millions, so Project 2 moved to Postgres |
+| Filters + cosine (hybrid)               | Meaning only                                     | More precise; depends on the extracted fields being right                                          |
+| Threshold 0.54                          | No threshold                                     | Blocks off-topic results; can drop a weak true match (precision vs recall)                         |
+| Python AI service + TS API              | One service                                      | Each language does what it's best at; more services to run                                         |
 
 ## Run locally
 
