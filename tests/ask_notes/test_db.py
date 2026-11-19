@@ -1,4 +1,5 @@
 import os
+import uuid
 from collections.abc import Iterator
 
 import psycopg
@@ -16,6 +17,11 @@ def vector(*first: float) -> list[float]:
     return list(first) + [0.0] * (768 - len(first))
 
 
+def unique_hash() -> str:
+    """A new hash every run, so rows already in the database can never clash with a test."""
+    return f"test-{uuid.uuid4()}"
+
+
 @pytest.fixture
 def conn() -> Iterator[psycopg.Connection]:
     """A connection whose changes are rolled back, so tests never leave data behind."""
@@ -25,10 +31,10 @@ def conn() -> Iterator[psycopg.Connection]:
         connection.rollback()
 
 
-def add_note(conn: psycopg.Connection, text: str) -> int:
+def add_note(conn: psycopg.Connection, text: str, content_hash: str | None = None) -> int:
     row = conn.execute(
         "INSERT INTO notes (content_hash, text, body_part, severity) VALUES (%s, %s, %s, %s) RETURNING id",
-        (f"test-{text}", text, "knee", 5),
+        (content_hash or unique_hash(), text, "knee", 5),
     ).fetchone()
     assert row is not None
     return int(row[0])
@@ -57,18 +63,20 @@ def test_closest_chunks_come_first(conn: psycopg.Connection) -> None:
 
 
 def test_same_note_cannot_be_saved_twice(conn: psycopg.Connection) -> None:
-    add_note(conn, "sore neck")
+    content_hash = unique_hash()
+    add_note(conn, "sore neck", content_hash)
     with pytest.raises(psycopg.errors.UniqueViolation):
-        add_note(conn, "sore neck")
+        add_note(conn, "sore neck", content_hash)
 
 
 def test_two_users_can_save_the_same_note(conn: psycopg.Connection) -> None:
+    content_hash = unique_hash()
     for user in ("alice", "bob"):
         conn.execute(
             "INSERT INTO notes (user_id, content_hash, text) VALUES (%s, %s, %s)",
-            (user, "same-hash", "knee pain"),
+            (user, content_hash, "knee pain"),
         )
-    row = conn.execute("SELECT count(*) FROM notes WHERE content_hash = 'same-hash'").fetchone()
+    row = conn.execute("SELECT count(*) FROM notes WHERE content_hash = %s", (content_hash,)).fetchone()
     assert row is not None and row[0] == 2
 
 
@@ -82,4 +90,4 @@ def test_deleting_a_note_deletes_its_chunks(conn: psycopg.Connection) -> None:
 
 def test_severity_must_be_between_1_and_10(conn: psycopg.Connection) -> None:
     with pytest.raises(psycopg.errors.CheckViolation):
-        conn.execute("INSERT INTO notes (content_hash, text, severity) VALUES ('x', 'x', 11)")
+        conn.execute("INSERT INTO notes (content_hash, text, severity) VALUES (%s, 'x', 11)", (unique_hash(),))
