@@ -4,14 +4,16 @@ Ask questions about your own long injury notes, and get answers that quote the e
 
 ## Files
 
-| File                        | Job                                                         |
-| --------------------------- | ----------------------------------------------------------- |
-| `docker-compose.yml`        | Runs Postgres 17 with pgvector                              |
-| `app/core/db.py`            | Opens a database connection (shared)                        |
-| `app/ask_notes/schema.sql`  | The `notes` and `chunks` tables, their rules and indexes    |
-| `app/ask_notes/setup_db.py` | Creates the tables; safe to run again                       |
-| `tests/ask_notes/`          | Its tests (the database tests need Postgres running)        |
-| `app/ask_notes/chunker.py`  | Splits a note into overlapping sentence chunks with offsets |
+| File                        | Job                                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------------------- |
+| `docker-compose.yml`        | Runs Postgres 17 with pgvector                                                           |
+| `app/core/db.py`            | Opens a database connection (shared)                                                     |
+| `app/ask_notes/schema.sql`  | The `notes` and `chunks` tables, their rules and indexes                                 |
+| `app/ask_notes/setup_db.py` | Creates the tables; safe to run again                                                    |
+| `tests/ask_notes/`          | Its tests (the database tests need Postgres running)                                     |
+| `app/ask_notes/chunker.py`  | Splits a note into overlapping sentence chunks with offsets                              |
+| `app/ask_notes/ingest.py`   | Saves a note: fields, chunks and vectors in one transaction; same note twice = no change |
+| `app/ask_notes/router.py`   | Endpoint `POST /notes`                                                                   |
 
 ## How it works
 
@@ -61,17 +63,19 @@ flowchart LR
 
 ## Trade-offs
 
-| Choice                   | Instead of                           | Why                                                                             |
-| ------------------------ | ------------------------------------ | ------------------------------------------------------------------------------- | --- | ------------------ | ---------- | --------------------------------------------------------------- |
-| Postgres + pgvector      | A vector database (Pinecone, Qdrant) | One system, filters and vectors in one query; less tuned for huge scale         |
-| HNSW index               | Exact search                         | Much faster; can miss about 1–5% of true matches, slower saves                  |
-| psycopg + plain SQL      | An ORM (SQLAlchemy)                  | You see and learn the real SQL; more code by hand                               |
-| Fields as columns        | A JSON column                        | Indexes and database rules work; a new field needs a schema change              |
-| `user_id` from day one   | Adding it with login                 | No migration in Project 5                                                       |
-| Content hash             | Allowing duplicates                  | Same note can't be saved twice; a one-letter edit counts as new                 |
-| Sentence chunks          | Fixed-size chunks                    | Keeps whole sentences unless one is longer than the limit; chunk sizes vary     |     | 1 sentence overlap | No overlap | Context kept at chunk edges; text stored twice, more embeddings |
-| 600 characters per chunk | Bigger or smaller chunks             | Small enough to cite exactly, big enough to keep meaning; tested in milestone 7 |
-| Local Docker Postgres    | A managed cloud database             | Free and easy now; backups are on you                                           |
+| Choice                       | Instead of                           | Why                                                                               |
+| ---------------------------- | ------------------------------------ | --------------------------------------------------------------------------------- | --- | ------------------ | ---------- | --------------------------------------------------------------- |
+| Postgres + pgvector          | A vector database (Pinecone, Qdrant) | One system, filters and vectors in one query; less tuned for huge scale           |
+| HNSW index                   | Exact search                         | Much faster; can miss about 1–5% of true matches, slower saves                    |
+| psycopg + plain SQL          | An ORM (SQLAlchemy)                  | You see and learn the real SQL; more code by hand                                 |
+| Fields as columns            | A JSON column                        | Indexes and database rules work; a new field needs a schema change                |
+| `user_id` from day one       | Adding it with login                 | No migration in Project 5                                                         |
+| Content hash                 | Allowing duplicates                  | Same note can't be saved twice; a one-letter edit counts as new                   |
+| Sentence chunks              | Fixed-size chunks                    | Keeps whole sentences unless one is longer than the limit; chunk sizes vary       |     | 1 sentence overlap | No overlap | Context kept at chunk edges; text stored twice, more embeddings |
+| 600 characters per chunk     | Bigger or smaller chunks             | Small enough to cite exactly, big enough to keep meaning; tested in milestone 7   |
+| Local Docker Postgres        | A managed cloud database             | Free and easy now; backups are on you                                             |
+| Fields from the whole note   | Fields per chunk                     | One extraction call per note; a note with several injuries gets only the main one |
+| Skip models if already saved | Always re-run                        | Saving twice costs nothing; an edited note counts as a new note                   |
 
 ## Run locally
 
@@ -97,7 +101,7 @@ docker compose exec db psql -U injury -d injury_ai -c "\dt" -c "\d chunks"
 - [x] Milestone 1: Postgres + pgvector
 - [x] Milestone 2: Test notes
 - [x] Milestone 3: Chunker with tests
-- [ ] Milestone 4: Ingest endpoint
+- [x] Milestone 4: Ingest endpoint
 - [ ] Milestone 5: Resilient model calls
 - [ ] Milestone 6: Retrieval function
 - [ ] Milestone 7: Chunking experiment
