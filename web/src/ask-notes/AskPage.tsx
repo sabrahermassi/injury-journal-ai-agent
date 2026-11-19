@@ -6,6 +6,7 @@ import {
   streamAnswer,
   type Citation,
   type Note,
+  type Scope,
   type StreamEvent,
 } from "./api";
 import "./AskPage.css";
@@ -21,11 +22,9 @@ export default function AskPage() {
   const [answer, setAnswer] = useState("");
   const [citations, setCitations] = useState<Citation[]>([]);
   const [refused, setRefused] = useState(false);
+  const [scope, setScope] = useState<Scope>("in_scope");
   const [error, setError] = useState("");
-  const [opened, setOpened] = useState<{
-    note: Note;
-    citation: Citation;
-  } | null>(null);
+  const [opened, setOpened] = useState<{ note: Note; citation: Citation } | null>(null);
   const controller = useRef<AbortController | null>(null);
   const lookup = useRef(0); // number of the latest citation lookup: older answers are ignored
 
@@ -40,6 +39,7 @@ export default function AskPage() {
       setAnswer(event.result.answer); // the checked answer replaces the streamed one
       setCitations(event.result.citations);
       setRefused(event.result.refused);
+      setScope(event.result.scope);
       setPhase("done");
     }
     if (event.type === "error") {
@@ -59,6 +59,7 @@ export default function AskPage() {
     setAnswer("");
     setCitations([]);
     setRefused(false);
+    setScope("in_scope");
     setError("");
     setOpened(null);
     lookup.current += 1; // a citation lookup still loading belongs to the old question
@@ -77,9 +78,7 @@ export default function AskPage() {
     } catch (error) {
       if (current.signal.aborted) return; // we stopped it on purpose
       if (error instanceof InvalidQuestionError) {
-        setError(
-          "The question was rejected. Check it isn't empty or longer than 1000 characters.",
-        );
+        setError("The question was rejected. Check it isn't empty or longer than 1000 characters.");
         setPhase("idle"); // no Retry: the same question would be rejected again
         return;
       }
@@ -121,9 +120,7 @@ export default function AskPage() {
   return (
     <main>
       <h1>Ask your notes</h1>
-      <p className="subtitle">
-        Answers come only from your notes, with quotes checked word for word.
-      </p>
+      <p className="subtitle">Answers come only from your notes, with quotes checked word for word.</p>
 
       <form onSubmit={handleSubmit} className="search-row">
         <input
@@ -143,40 +140,26 @@ export default function AskPage() {
         )}
       </form>
 
-      {phase === "streaming" && (
-        <p className="status">{status || "Starting"}…</p>
-      )}
+      {phase === "streaming" && <p className="status">{status || "Starting"}…</p>}
 
       {(answer || phase === "done") && (
-        <section className={`answer ${refused ? "refused" : ""}`}>
+        <section className={`answer ${scope === "urgent" ? "urgent" : refused ? "refused" : ""}`}>
           <p>
             {answer}
             {phase === "done" &&
               citations.map((citation, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  className="cite"
-                  onClick={() => void openCitation(citation)}
-                >
+                <button key={index} type="button" className="cite" onClick={() => void openCitation(citation)}>
                   [{index + 1}]
                 </button>
               ))}
           </p>
-          {phase === "streaming" && (
-            <p className="hint">
-              Not checked yet: quotes are checked when the answer is finished.
-            </p>
-          )}
+          {phase === "streaming" && <p className="hint">Not checked yet: quotes are checked when the answer is finished.</p>}
         </section>
       )}
 
       {phase === "lost" && (
         <p className="error">
-          {error}{" "}
-          <button type="button" onClick={() => void ask(asked)}>
-            Retry
-          </button>
+          {error} <button type="button" onClick={() => void ask(asked)}>Retry</button>
         </p>
       )}
       {phase !== "lost" && error && <p className="error">{error}</p>}
@@ -184,17 +167,11 @@ export default function AskPage() {
       {opened && (
         <section className="note">
           <h2>
-            Note {opened.note.note_date ?? ""}{" "}
-            {opened.note.body_part ? `· ${opened.note.body_part}` : ""}
+            Note {opened.note.note_date ?? ""} {opened.note.body_part ? `· ${opened.note.body_part}` : ""}
           </h2>
           <p>
             {opened.note.text.slice(0, opened.citation.start)}
-            <mark>
-              {opened.note.text.slice(
-                opened.citation.start,
-                opened.citation.end,
-              )}
-            </mark>
+            <mark>{opened.note.text.slice(opened.citation.start, opened.citation.end)}</mark>
             {opened.note.text.slice(opened.citation.end)}
           </p>
           <button type="button" className="secondary" onClick={closeNote}>

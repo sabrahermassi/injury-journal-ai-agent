@@ -4,6 +4,7 @@ import logging
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from app.ask_notes.input_check import Scope, check_question, scope_message
 from app.ask_notes.retrieve import RetrievedChunk, retrieve
 from app.core.llm import chat
 from app.semantic_search.search import SearchFilters
@@ -64,6 +65,7 @@ class AskResult(BaseModel):
     answer: str
     citations: list[Citation]
     refused: bool  # True when no checked answer could be given
+    scope: Scope = "in_scope"  # out_of_scope and urgent questions are never searched
 
 
 def normalize(text: str) -> str:
@@ -123,7 +125,11 @@ def ask(
     top_k: int = 5,
     user_id: str = "demo",
 ) -> AskResult:
-    """Retrieve passages, ask the model, check every quote. Retry once, then refuse."""
+    """Check the question, retrieve passages, ask the model, check every quote. Retry once, then refuse."""
+    scope = check_question(question)
+    if scope != "in_scope":
+        return AskResult(answer=scope_message(scope), citations=[], refused=True, scope=scope)
+
     chunks = strong_chunks(question, embed_model, filters, top_k, user_id)
     if not chunks:
         return AskResult(answer=NOT_FOUND, citations=[], refused=True)
