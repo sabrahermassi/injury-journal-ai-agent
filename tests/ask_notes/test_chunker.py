@@ -103,3 +103,14 @@ def test_overlap_is_skipped_when_a_chunk_holds_one_sentence() -> None:
     chunks = chunk_note(1, text, max_chars=6, overlap=1)
     check_offsets(text, chunks)
     assert [c.text for c in chunks] == ["Alpha.", "Bravo."]
+
+
+def test_every_chunk_adds_new_text() -> None:
+    a, b, c = "A" * 9 + ".", "B" * 9 + ".", "C" * 99 + "."
+    text = f"{a} {b} {c}"
+    for overlap in (1, 2):
+        chunks = chunk_note(1, text, max_chars=105, overlap=overlap)
+        check_offsets(text, chunks)
+        assert [ch.text for ch in chunks] == [f"{a} {b}", c]
+    for before, after in zip(chunks, chunks[1:]):
+        assert after.end > before.end

@@ -45,8 +45,8 @@ def chunk_note(note_id: int, text: str, max_chars: int = 600, overlap: int = 1) 
     """Group whole sentences into chunks of at most max_chars.
 
     Overlap is best effort: each chunk starts `overlap` sentences before the end of the one before,
-    but always at least one sentence further on. So a chunk that holds only one sentence
-    (because the next one doesn't fit in max_chars) is followed by a chunk with no overlap.
+    but always at least one sentence further on, and only as much overlap as still leaves room
+    for the next new sentence. So every chunk adds new text, and some chunks have no overlap.
     """
     if max_chars <= 0 or overlap < 0:
         raise ValueError("max_chars must be positive and overlap not negative")
@@ -64,4 +64,8 @@ def chunk_note(note_id: int, text: str, max_chars: int = 600, overlap: int = 1) 
             break
         # Next chunk starts `overlap` sentences back, but always at least 1 sentence forward.
         first = max(last + 1 - overlap, first + 1)
+        # Drop overlap sentences until the next chunk can also fit the next new sentence,
+        # so every chunk adds new text and is never a copy of part of the one before.
+        while first <= last and spans[last + 1][1] - spans[first][0] > max_chars:
+            first += 1
     return chunks
