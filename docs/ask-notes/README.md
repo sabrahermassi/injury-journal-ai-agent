@@ -59,6 +59,36 @@ flowchart LR
 - **Check quotes**: plain code checks that every quote really appears in its chunk. If not, the app refuses.
 - If the notes don't contain the answer, the app says "I could not find that in your notes".
 
+## Trade-offs
+
+| Choice                   | Instead of                           | Why                                                                             |
+| ------------------------ | ------------------------------------ | ------------------------------------------------------------------------------- |
+| Postgres + pgvector      | A vector database (Pinecone, Qdrant) | One system, filters and vectors in one query; less tuned for huge scale         |
+| HNSW index               | Exact search                         | Much faster; can miss about 1–5% of true matches, slower saves                  |
+| psycopg + plain SQL      | An ORM (SQLAlchemy)                  | You see and learn the real SQL; more code by hand                               |
+| Fields as columns        | A JSON column                        | Indexes and database rules work; a new field needs a schema change              |
+| `user_id` from day one   | Adding it with login                 | No migration in Project 5                                                       |
+| Content hash             | Allowing duplicates                  | Same note can't be saved twice; a one-letter edit counts as new                 |
+| Sentence chunks          | Fixed-size chunks                    | Never cuts a sentence in half; chunk sizes vary                                 |
+| 1 sentence overlap       | No overlap                           | Context kept at chunk edges; text stored twice, more embeddings                 |
+| 600 characters per chunk | Bigger or smaller chunks             | Small enough to cite exactly, big enough to keep meaning; tested in milestone 7 |
+| Local Docker Postgres    | A managed cloud database             | Free and easy now; backups are on you                                           |
+
+## Run locally
+
+Set up the whole app first (root README): it starts Postgres and creates the tables. Look inside the database:
+
+```bash
+docker compose exec db psql -U injury -d injury_ai -c "\dt" -c "\d chunks"
+```
+
+## Commands
+
+| Command                                                   | What it does                               |
+| --------------------------------------------------------- | ------------------------------------------ |
+| `uv run --env-file .env python -m app.ask_notes.setup_db` | Creates the tables (safe to repeat)        |
+| `uv run --env-file .env pytest -q tests/ask_notes`        | This project's tests, on the real database |
+
 ## Docs
 
 - [Postgres and pgvector](postgres-pgvector.md): the tables, keys, indexes, how HNSW search works, and the trade-offs.
@@ -78,18 +108,3 @@ flowchart LR
 - [ ] Milestone 11: Input check
 - [ ] Milestone 12: 20 test questions
 - [ ] Milestone 13: Write your notes
-
-## Run locally
-
-Set up the whole app first (root README): it starts Postgres and creates the tables. Look inside the database:
-
-```bash
-docker compose exec db psql -U injury -d injury_ai -c "\dt" -c "\d chunks"
-```
-
-## Commands
-
-| Command                                                   | What it does                               |
-| --------------------------------------------------------- | ------------------------------------------ |
-| `uv run --env-file .env python -m app.ask_notes.setup_db` | Creates the tables (safe to repeat)        |
-| `uv run --env-file .env pytest -q tests/ask_notes`        | This project's tests, on the real database |
