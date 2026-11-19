@@ -62,6 +62,16 @@ def test_same_note_cannot_be_saved_twice(conn: psycopg.Connection) -> None:
         add_note(conn, "sore neck")
 
 
+def test_two_users_can_save_the_same_note(conn: psycopg.Connection) -> None:
+    for user in ("alice", "bob"):
+        conn.execute(
+            "INSERT INTO notes (user_id, content_hash, text) VALUES (%s, %s, %s)",
+            (user, "same-hash", "knee pain"),
+        )
+    row = conn.execute("SELECT count(*) FROM notes WHERE content_hash = 'same-hash'").fetchone()
+    assert row is not None and row[0] == 2
+
+
 def test_deleting_a_note_deletes_its_chunks(conn: psycopg.Connection) -> None:
     note_id = add_note(conn, "sore shoulder")
     add_chunk(conn, note_id, 0, "sore shoulder", vector(1.0))

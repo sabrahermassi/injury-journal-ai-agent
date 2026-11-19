@@ -5,15 +5,21 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- One row per note. The extracted fields are columns, so filters are plain SQL.
 CREATE TABLE IF NOT EXISTS notes (
     id           BIGSERIAL PRIMARY KEY,
-    content_hash TEXT NOT NULL UNIQUE,  -- fingerprint of the text: the same note can't be saved twice
+    user_id      TEXT NOT NULL DEFAULT 'demo',  -- whose note; every query filters on it (login comes in Project 5)
+    content_hash TEXT NOT NULL,  -- fingerprint of the text
     text         TEXT NOT NULL,
     injury       TEXT,
     body_part    TEXT,
     severity     SMALLINT CHECK (severity BETWEEN 1 AND 10),
     cause        TEXT,
     note_date    DATE,
-    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (user_id, content_hash)  -- the same user can't save the same note twice
 );
+
+-- Fast filters: always by user first, then body part or date.
+CREATE INDEX IF NOT EXISTS notes_user_body_part_idx ON notes (user_id, body_part);
+CREATE INDEX IF NOT EXISTS notes_user_date_idx ON notes (user_id, note_date);
 
 -- One row per chunk of a note: its place in the note, its text and its vector.
 CREATE TABLE IF NOT EXISTS chunks (
