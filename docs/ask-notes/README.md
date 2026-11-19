@@ -62,15 +62,14 @@ flowchart LR
 ## Trade-offs
 
 | Choice                   | Instead of                           | Why                                                                             |
-| ------------------------ | ------------------------------------ | ------------------------------------------------------------------------------- |
+| ------------------------ | ------------------------------------ | ------------------------------------------------------------------------------- | --- | ------------------ | ---------- | --------------------------------------------------------------- |
 | Postgres + pgvector      | A vector database (Pinecone, Qdrant) | One system, filters and vectors in one query; less tuned for huge scale         |
 | HNSW index               | Exact search                         | Much faster; can miss about 1–5% of true matches, slower saves                  |
 | psycopg + plain SQL      | An ORM (SQLAlchemy)                  | You see and learn the real SQL; more code by hand                               |
 | Fields as columns        | A JSON column                        | Indexes and database rules work; a new field needs a schema change              |
 | `user_id` from day one   | Adding it with login                 | No migration in Project 5                                                       |
 | Content hash             | Allowing duplicates                  | Same note can't be saved twice; a one-letter edit counts as new                 |
-| Sentence chunks          | Fixed-size chunks                    | Never cuts a sentence in half; chunk sizes vary                                 |
-| 1 sentence overlap       | No overlap                           | Context kept at chunk edges; text stored twice, more embeddings                 |
+| Sentence chunks          | Fixed-size chunks                    | Keeps whole sentences unless one is longer than the limit; chunk sizes vary     |     | 1 sentence overlap | No overlap | Context kept at chunk edges; text stored twice, more embeddings |
 | 600 characters per chunk | Bigger or smaller chunks             | Small enough to cite exactly, big enough to keep meaning; tested in milestone 7 |
 | Local Docker Postgres    | A managed cloud database             | Free and easy now; backups are on you                                           |
 
