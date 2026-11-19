@@ -4,13 +4,14 @@ Ask questions about your own long injury notes, and get answers that quote the e
 
 ## Files
 
-| File                        | Job                                                      |
-| --------------------------- | -------------------------------------------------------- |
-| `docker-compose.yml`        | Runs Postgres 17 with pgvector                           |
-| `app/core/db.py`            | Opens a database connection (shared)                     |
-| `app/ask_notes/schema.sql`  | The `notes` and `chunks` tables, their rules and indexes |
-| `app/ask_notes/setup_db.py` | Creates the tables; safe to run again                    |
-| `tests/ask_notes/`          | Its tests (the database tests need Postgres running)     |
+| File                        | Job                                                         |
+| --------------------------- | ----------------------------------------------------------- |
+| `docker-compose.yml`        | Runs Postgres 17 with pgvector                              |
+| `app/core/db.py`            | Opens a database connection (shared)                        |
+| `app/ask_notes/schema.sql`  | The `notes` and `chunks` tables, their rules and indexes    |
+| `app/ask_notes/setup_db.py` | Creates the tables; safe to run again                       |
+| `tests/ask_notes/`          | Its tests (the database tests need Postgres running)        |
+| `app/ask_notes/chunker.py`  | Splits a note into overlapping sentence chunks with offsets |
 
 ## How it works
 
@@ -58,25 +59,19 @@ flowchart LR
 - **Check quotes**: plain code checks that every quote really appears in its chunk. If not, the app refuses.
 - If the notes don't contain the answer, the app says "I could not find that in your notes".
 
-## Docs
+## Trade-offs
 
-- [Postgres and pgvector](postgres-pgvector.md): the tables, keys, indexes, how HNSW search works, and the trade-offs.
-
-## Status
-
-- [x] Milestone 1: Postgres + pgvector
-- [ ] Milestone 2: Test notes
-- [ ] Milestone 3: Chunker with tests
-- [ ] Milestone 4: Ingest endpoint
-- [ ] Milestone 5: Resilient model calls
-- [ ] Milestone 6: Retrieval function
-- [ ] Milestone 7: Chunking experiment
-- [ ] Milestone 8: Grounded answer
-- [ ] Milestone 9: Not-found behavior
-- [ ] Milestone 10: Chat UI
-- [ ] Milestone 11: Input check
-- [ ] Milestone 12: 20 test questions
-- [ ] Milestone 13: Write your notes
+| Choice                   | Instead of                           | Why                                                                             |
+| ------------------------ | ------------------------------------ | ------------------------------------------------------------------------------- | --- | ------------------ | ---------- | --------------------------------------------------------------- |
+| Postgres + pgvector      | A vector database (Pinecone, Qdrant) | One system, filters and vectors in one query; less tuned for huge scale         |
+| HNSW index               | Exact search                         | Much faster; can miss about 1–5% of true matches, slower saves                  |
+| psycopg + plain SQL      | An ORM (SQLAlchemy)                  | You see and learn the real SQL; more code by hand                               |
+| Fields as columns        | A JSON column                        | Indexes and database rules work; a new field needs a schema change              |
+| `user_id` from day one   | Adding it with login                 | No migration in Project 5                                                       |
+| Content hash             | Allowing duplicates                  | Same note can't be saved twice; a one-letter edit counts as new                 |
+| Sentence chunks          | Fixed-size chunks                    | Keeps whole sentences unless one is longer than the limit; chunk sizes vary     |     | 1 sentence overlap | No overlap | Context kept at chunk edges; text stored twice, more embeddings |
+| 600 characters per chunk | Bigger or smaller chunks             | Small enough to cite exactly, big enough to keep meaning; tested in milestone 7 |
+| Local Docker Postgres    | A managed cloud database             | Free and easy now; backups are on you                                           |
 
 ## Run locally
 
@@ -92,3 +87,23 @@ docker compose exec db psql -U injury -d injury_ai -c "\dt" -c "\d chunks"
 | --------------------------------------------------------- | ------------------------------------------ |
 | `uv run --env-file .env python -m app.ask_notes.setup_db` | Creates the tables (safe to repeat)        |
 | `uv run --env-file .env pytest -q tests/ask_notes`        | This project's tests, on the real database |
+
+## Docs
+
+- [Postgres and pgvector](postgres-pgvector.md): the tables, keys, indexes, how HNSW search works, and the trade-offs.
+
+## Status
+
+- [x] Milestone 1: Postgres + pgvector
+- [x] Milestone 2: Test notes
+- [x] Milestone 3: Chunker with tests
+- [ ] Milestone 4: Ingest endpoint
+- [ ] Milestone 5: Resilient model calls
+- [ ] Milestone 6: Retrieval function
+- [ ] Milestone 7: Chunking experiment
+- [ ] Milestone 8: Grounded answer
+- [ ] Milestone 9: Not-found behavior
+- [ ] Milestone 10: Chat UI
+- [ ] Milestone 11: Input check
+- [ ] Milestone 12: 20 test questions
+- [ ] Milestone 13: Write your notes

@@ -70,25 +70,6 @@ flowchart LR
 - **Min score 0.54** drops weak matches, so an off-topic search returns nothing.
 - **Top 5 notes** are shown with their fields, highest score first.
 
-## Learn more
-
-- [Structured extraction](structured-extraction.md): the LLM, how `messages` and roles work, and how a messy note becomes validated fields.
-- [Embedding model](embedding-model.md): what vectors are, the rules for using them, how notes are embedded and saved, and cosine similarity.
-- [FastAPI endpoints](fastapi-endpoints.md): the 3 endpoints, the `/docs` test page, and how the lock stops two saves from losing a note.
-- [Score threshold](threshold.md): why search needs a minimum score, and how 0.54 was chosen by experiment.
-- [Search UI](search-ui.md): how React, the TS API and Python connect, and what each layer checks.
-
-## Status
-
-- [x] Milestone 1: Project skeleton (Python)
-- [x] Milestone 2: Structured extraction (Python)
-- [x] Milestone 3: Embed and persist
-- [x] Milestone 4: Cosine similarity with tests
-- [x] Milestone 5: search function (hybrid)
-- [x] Milestone 6: FastAPI endpoints
-- [x] Milestone 7: threshold experiment
-- [x] Milestone 8: React search UI
-
 ## Extraction model choice
 
 Each model extracted 5 fields from the same 10 labelled test notes (`eval/semantic_search/notes.json`), and `app/semantic_search/evaluation/extraction_benchmark.py` compared its answers to the expected ones.
@@ -126,6 +107,22 @@ All options found the right note in the top 3, so the test set is too small to s
 
 To run it yourself: `ollama pull mxbai-embed-large`, `ollama pull all-minilm`, then `uv run --env-file .env python -m app.semantic_search.evaluation.embedding_benchmark`.
 
+## Trade-offs
+
+| Choice                       | Instead of                   | Why                                                                            |
+| ---------------------------- | ---------------------------- | ------------------------------------------------------------------------------ |
+| Local Ollama                 | A cloud API (OpenAI, Claude) | Free and private for health data; slower, weaker models                        |
+| qwen2.5:3b                   | qwen2.5:7b                   | Twice as fast for 1 fewer correct field (43 vs 44 of 50)                       |
+| nomic-embed-text             | Bigger embedding models      | Small (274 MB), same accuracy on the test set; the set is too small to be sure |
+| Embed the raw note           | Embed the extracted fields   | Search still works when extraction makes a mistake                             |
+| LLM extraction               | A form or regex              | Works on messy text; can be wrong, so Pydantic validation and a retry          |
+| JSON file                    | A database                   | Simple to build; doesn't scale, so Project 2 moved to Postgres                 |
+| Compare every note in Python | A vector index               | Fine for hundreds of notes; too slow for millions                              |
+| Filters + cosine (hybrid)    | Meaning only                 | More precise; depends on the extracted fields being right                      |
+| Threshold 0.54               | No threshold                 | Blocks off-topic results; can drop a weak true match (precision vs recall)     |
+| Python AI service + TS API   | One service                  | Each language does what it's best at; more services to run                     |
+| A lock in Python             | Database transactions        | Simple; only works with one process                                            |
+
 ## Run locally
 
 Set up the whole app first (root README). Then create `data/semantic_search/raw_notes.json`: a UTF-8 JSON array of strings, one note each. `data/` is in `.gitignore`, so personal notes are never committed.
@@ -149,3 +146,22 @@ uv run --env-file .env python -m app.semantic_search.index
 | `uv run --env-file .env python -m app.semantic_search.evaluation.embedding_benchmark`  | Embedding benchmark                  |
 | `uv run --env-file .env python -m app.semantic_search.evaluation.threshold`            | Threshold experiment                 |
 | `uv run pytest -q tests/semantic_search`                                               | This project's tests                 |
+
+## Learn more
+
+- [Structured extraction](structured-extraction.md): the LLM, how `messages` and roles work, and how a messy note becomes validated fields.
+- [Embedding model](embedding-model.md): what vectors are, the rules for using them, how notes are embedded and saved, and cosine similarity.
+- [FastAPI endpoints](fastapi-endpoints.md): the 3 endpoints, the `/docs` test page, and how the lock stops two saves from losing a note.
+- [Score threshold](threshold.md): why search needs a minimum score, and how 0.54 was chosen by experiment.
+- [Search UI](search-ui.md): how React, the TS API and Python connect, and what each layer checks.
+
+## Status
+
+- [x] Milestone 1: Project skeleton (Python)
+- [x] Milestone 2: Structured extraction (Python)
+- [x] Milestone 3: Embed and persist
+- [x] Milestone 4: Cosine similarity with tests
+- [x] Milestone 5: search function (hybrid)
+- [x] Milestone 6: FastAPI endpoints
+- [x] Milestone 7: threshold experiment
+- [x] Milestone 8: React search UI
