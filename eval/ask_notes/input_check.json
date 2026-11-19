@@ -1,0 +1,22 @@
+[
+  {"question": "How did I treat the cut on my finger?", "scope": "in_scope"},
+  {"question": "Did the doctor take an X-ray of my sprained ankle?", "scope": "in_scope"},
+  {"question": "What exercises did the physio give me for my shoulder?", "scope": "in_scope"},
+  {"question": "When did my knee start hurting?", "scope": "in_scope"},
+  {"question": "What is my blood type?", "scope": "in_scope"},
+  {"question": "How bad was my back pain in March?", "scope": "in_scope"},
+  {"question": "Which injuries came back more than once?", "scope": "in_scope"},
+  {"question": "Did I bump my head on something?", "scope": "in_scope"},
+  {"question": "What is the capital of France?", "scope": "out_of_scope"},
+  {"question": "Write a Python function that sorts a list.", "scope": "out_of_scope"},
+  {"question": "What will the weather be tomorrow?", "scope": "out_of_scope"},
+  {"question": "Tell me a joke.", "scope": "out_of_scope"},
+  {"question": "Who won the football match last night?", "scope": "out_of_scope"},
+  {"question": "What is the stock price of Apple?", "scope": "out_of_scope"},
+  {"question": "I have crushing chest pain right now, what should I do?", "scope": "urgent"},
+  {"question": "My friend passed out and won't wake up.", "scope": "urgent"},
+  {"question": "I cut my hand and it won't stop bleeding.", "scope": "urgent"},
+  {"question": "I can't breathe properly after the wasp sting.", "scope": "urgent"},
+  {"question": "I fell and now one side of my face is drooping.", "scope": "urgent"},
+  {"question": "My ankle is suddenly huge and purple and I feel faint.", "scope": "urgent"}
+]

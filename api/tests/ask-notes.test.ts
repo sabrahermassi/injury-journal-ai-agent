@@ -13,6 +13,7 @@ const DONE = {
     answer: "No X-ray was needed.",
     citations: [{ note_id: 5, chunk_id: 9, start: 10, end: 40, quote: "no X-ray was needed" }],
     refused: false,
+    scope: "in_scope",
   },
 };
 

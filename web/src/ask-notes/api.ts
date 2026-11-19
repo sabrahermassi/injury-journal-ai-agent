@@ -8,10 +8,13 @@ export type Citation = {
   quote: string;
 };
 
+export type Scope = "in_scope" | "out_of_scope" | "urgent";
+
 export type AskResult = {
   answer: string;
   citations: Citation[];
   refused: boolean;
+  scope: Scope;
 };
 
 export type StreamEvent =

@@ -32,6 +32,7 @@ export const AskResult = z.object({
   answer: z.string(),
   citations: z.array(Citation),
   refused: z.boolean(),
+  scope: z.enum(["in_scope", "out_of_scope", "urgent"]), // out_of_scope and urgent are never searched
 });
 
 // One event of the answer stream. Anything else from Python is rejected.

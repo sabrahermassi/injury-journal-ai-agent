@@ -6,6 +6,7 @@ import {
   streamAnswer,
   type Citation,
   type Note,
+  type Scope,
   type StreamEvent,
 } from "./api";
 import "./AskPage.css";
@@ -21,6 +22,7 @@ export default function AskPage() {
   const [answer, setAnswer] = useState("");
   const [citations, setCitations] = useState<Citation[]>([]);
   const [refused, setRefused] = useState(false);
+  const [scope, setScope] = useState<Scope>("in_scope");
   const [error, setError] = useState("");
   const [opened, setOpened] = useState<{
     note: Note;
@@ -40,6 +42,7 @@ export default function AskPage() {
       setAnswer(event.result.answer); // the checked answer replaces the streamed one
       setCitations(event.result.citations);
       setRefused(event.result.refused);
+      setScope(event.result.scope);
       setPhase("done");
     }
     if (event.type === "error") {
@@ -59,6 +62,7 @@ export default function AskPage() {
     setAnswer("");
     setCitations([]);
     setRefused(false);
+    setScope("in_scope");
     setError("");
     setOpened(null);
     lookup.current += 1; // a citation lookup still loading belongs to the old question
@@ -148,7 +152,9 @@ export default function AskPage() {
       )}
 
       {(answer || phase === "done") && (
-        <section className={`answer ${refused ? "refused" : ""}`}>
+        <section
+          className={`answer ${scope === "urgent" ? "urgent" : refused ? "refused" : ""}`}
+        >
           <p>
             {answer}
             {phase === "done" &&

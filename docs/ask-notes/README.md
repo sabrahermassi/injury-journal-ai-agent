@@ -23,6 +23,8 @@ Ask questions about your own long injury notes, and get answers that quote the e
 | `app/ask_notes/stream.py`                         | Streams the answer as events: status, answer text, reset, done                                    |
 | `api/src/ask-notes/`                              | TS API: `POST /api/ask/stream` (passes events through, checked with Zod) and `GET /api/notes/:id` |
 | `web/src/ask-notes/AskPage.tsx`                   | The Ask page: streamed answer, clickable citations, Stop and Retry                                |
+| `app/ask_notes/input_check.py`                    | Sorts each question first: in scope, out of scope or urgent (word list, then the model)           |
+| `app/ask_notes/evaluation/input_check.py`         | Measures the sorting on 20 labelled questions                                                     |
 
 ## How it works
 
@@ -101,6 +103,7 @@ uv run --env-file .env python -m app.ask_notes.evaluation.chunking_experiment
 | Local Docker Postgres                               | A managed cloud database             | Free and easy now; backups are on you                                                                                                                           |
 | Threshold 0.65 plus "found: false" in the prompt    | Threshold only                       | Scores overlap (answerable 0.69–0.83, unanswerable 0.51–0.70), so the threshold blocks most cheaply and the model catches the rest; 8/8 refused, 15/16 answered |
 | Stream the answer, check quotes at the end          | Wait for the checked answer          | Text appears at once; it's labelled "not checked" and is replaced or cleared if its quotes fail                                                                 |
+| Urgent word list first, then the model              | Model only                           | Emergencies are caught instantly and can't be argued away; costs one extra model call per question                                                              |
 
 ## Run locally
 
@@ -133,6 +136,6 @@ docker compose exec db psql -U injury -d injury_ai -c "\dt" -c "\d chunks"
 - [x] Milestone 8: Grounded answer
 - [x] Milestone 9: Not-found behavior
 - [x] Milestone 10: Chat UI
-- [ ] Milestone 11: Input check
+- [x] Milestone 11: Input check
 - [ ] Milestone 12: 20 test questions
 - [ ] Milestone 13: Write your notes
