@@ -42,4 +42,5 @@ jobs:
           # stay manual — nothing here runs on its own. Any other request —
           # fix this, explain that — is untouched and answers normally.
           claude_args: |
+            --model claude-sonnet-5-5
             --append-system-prompt "When asked to review a pull request, follow .claude/skills/pr-review/SKILL.md exactly. It governs reviews only; answer every other request normally."
