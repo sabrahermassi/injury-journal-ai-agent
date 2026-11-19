@@ -81,3 +81,23 @@ def ingest_note(text: str, embed_model: str, user_id: str = "demo") -> IngestRes
             )
     logger.info("note %s saved with %s chunks", note_id, len(chunks))
     return IngestResult(note_id=note_id, chunks=len(chunks), created=True)
+
+
+class Note(BaseModel):
+    id: int
+    text: str
+    body_part: str | None
+    severity: int | None
+    note_date: date | None
+
+
+def get_note(note_id: int, user_id: str = "demo") -> Note | None:
+    """One saved note of this user, for showing a citation in its full note. None if it isn't theirs."""
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT id, text, body_part, severity, note_date FROM notes WHERE id = %s AND user_id = %s",
+            (note_id, user_id),
+        ).fetchone()
+    if row is None:
+        return None
+    return Note(id=row[0], text=row[1], body_part=row[2], severity=row[3], note_date=row[4])

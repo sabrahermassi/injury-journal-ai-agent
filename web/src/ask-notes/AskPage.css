@@ -1,0 +1,58 @@
+.status,
+.hint {
+  color: var(--muted);
+}
+
+.answer,
+.note {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.answer p {
+  margin: 0;
+}
+
+.answer p + p {
+  margin-top: 8px;
+}
+
+.answer.refused {
+  color: var(--muted);
+}
+
+.note p {
+  white-space: pre-wrap; /* keep the note's paragraphs */
+}
+
+.note h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+mark {
+  background: #ffe066;
+  color: #1c1c1e;
+}
+
+button.cite {
+  margin-left: 4px;
+  padding: 0 4px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+button.secondary {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.error {
+  color: var(--error);
+}

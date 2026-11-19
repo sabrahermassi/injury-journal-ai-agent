@@ -1,3 +1,4 @@
+import json
 import socket
 import threading
 import time
@@ -12,7 +13,7 @@ from ollama import ResponseError
 from app.api import app
 from app.core import model_call
 from app.core.embed import embed_documents
-from app.core.llm import chat
+from app.core.llm import chat, chat_stream
 from app.core.model_call import ModelUnavailableError, call_model
 
 
@@ -116,3 +117,40 @@ def test_endpoint_answers_503_when_the_model_is_down(monkeypatch: pytest.MonkeyP
     response = TestClient(app).post("/extract", json={"note": "knee pain"})
     assert response.status_code == 503
     assert response.json() == {"detail": "The language model is not responding. Is Ollama running?"}
+
+
+class StreamingHandler(BaseHTTPRequestHandler):
+    """A fake Ollama that streams a chat reply in 3 pieces, one JSON line each."""
+
+    def do_POST(self) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "application/x-ndjson")
+        self.end_headers()
+        for piece in ['{"answer": ', '"No X-ray', ' needed."}']:
+            line = {"model": "m", "created_at": "2026-01-01T00:00:00Z", "message": {"role": "assistant", "content": piece}, "done": False}
+            self.wfile.write((json.dumps(line) + "\n").encode())
+            self.wfile.flush()
+
+    def log_message(self, *args: object) -> None:
+        pass
+
+
+def test_chat_stream_yields_the_reply_piece_by_piece(monkeypatch: pytest.MonkeyPatch) -> None:
+    server = ThreadingHTTPServer(("127.0.0.1", 0), StreamingHandler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    monkeypatch.setenv("OLLAMA_URL", f"http://127.0.0.1:{server.server_port}")
+    monkeypatch.setenv("LLM_MODEL", "qwen2.5:3b")
+    try:
+        assert list(chat_stream([{"role": "user", "content": "hi"}])) == ['{"answer": ', '"No X-ray', ' needed."}']
+    finally:
+        server.shutdown()
+
+
+def test_chat_stream_to_a_crashed_model_gives_a_clear_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    monkeypatch.setenv("OLLAMA_URL", f"http://127.0.0.1:{port}")
+    monkeypatch.setenv("LLM_MODEL", "qwen2.5:3b")
+    with pytest.raises(ModelUnavailableError, match="language model"):
+        list(chat_stream([{"role": "user", "content": "hi"}]))
