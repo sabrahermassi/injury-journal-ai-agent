@@ -85,25 +85,15 @@ uv run --env-file .env python -m app.ask_notes.evaluation.chunking_experiment
 
 ## Trade-offs
 
-| Choice                           | Instead of                           | Why                                                                                                       |
-| -------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------- | --- | --------------------- | ------------------------ | ------------------------------------- |
-| Postgres + pgvector              | A vector database (Pinecone, Qdrant) | One system, filters and vectors in one query; less tuned for huge scale                                   |
-| HNSW index                       | Exact search                         | Much faster; can miss about 1–5% of true matches, slower saves                                            |
-| psycopg + plain SQL              | An ORM (SQLAlchemy)                  | You see and learn the real SQL; more code by hand                                                         |
-| Fields as columns                | A JSON column                        | Indexes and database rules work; a new field needs a schema change                                        |
-| `user_id` from day one           | Adding it with login                 | No migration in Project 5                                                                                 |
-| Content hash                     | Allowing duplicates                  | Same note can't be saved twice; a one-letter edit counts as new                                           |
-| Sentence chunks                  | Fixed-size chunks                    | Keeps whole sentences unless one is longer than the limit; chunk sizes vary                               |
-| 1 sentence overlap               | No overlap                           | Context kept at chunk edges; text stored twice, more embeddings                                           |
-| 300 characters per chunk         | 600, 1000 or whole notes             | Won the chunking experiment (13/16 top-1, 16/16 top-3); twice the embeddings of 600                       |     | Local Docker Postgres | A managed cloud database | Free and easy now; backups are on you |
-| Fields from the whole note       | Fields per chunk                     | One extraction call per note; a note with several injuries gets only the main one                         |
-| Skip models if already saved     | Always re-run                        | Saving twice costs nothing; an edited note counts as a new note                                           |
-| One retry after 1 s              | Many retries                         | Recovers from a blip; a real outage fails fast instead of making the user wait                            |
-| 60 s timeout                     | No timeout                           | A stuck model can't hang a request forever; a very slow but working model may be cut off                  |
-| Retry only temporary errors      | Retry everything                     | Our own mistakes (wrong model name) fail at once, not twice                                               |
-| Filter first, then exact ranking | HNSW index plus filters              | Always returns top_k when enough chunks match; doesn't use the HNSW shortcut, fine for one person's notes |
-| No score threshold yet           | Threshold now                        | Always returns the closest chunks; "not found" is handled in milestone 9                                  |
-| Reuse Project 1 filters          | New filter model                     | Same filters in both projects; Project 2 imports from Project 1                                           |
+| Choice                                              | Instead of                           | Why                                                                                                                    |
+| --------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Postgres + pgvector                                 | A vector database (Pinecone, Qdrant) | One system, filters and vectors in one query; less tuned for huge scale                                                |
+| HNSW index                                          | Exact search                         | Much faster at scale; can miss a few true matches. Filtered search ranks exactly, which is fine for one person's notes |
+| psycopg + plain SQL                                 | An ORM (SQLAlchemy)                  | You see and learn the real SQL; more code by hand                                                                      |
+| Sentence chunks, 300 characters, 1 sentence overlap | Whole notes, or bigger chunks        | Won the chunking experiment (13/16 top-1, 16/16 top-3); more embeddings to store                                       |
+| Quote check in plain code, retry once, then refuse  | Trust the model's answer             | An invented quote is always caught; it can't prove the answer agrees with its quotes (LLM judge in Project 3)          |
+| Timeout + one retry on model calls                  | No timeout, or many retries          | A stuck model can't hang a request; a real outage fails fast with a clear 503                                          |
+| Local Docker Postgres                               | A managed cloud database             | Free and easy now; backups are on you                                                                                  |
 
 ## Run locally
 
@@ -133,7 +123,7 @@ docker compose exec db psql -U injury -d injury_ai -c "\dt" -c "\d chunks"
 - [x] Milestone 5: Resilient model calls
 - [x] Milestone 6: Retrieval function
 - [x] Milestone 7: Chunking experiment
-- [ ] Milestone 8: Grounded answer
+- [x] Milestone 8: Grounded answer
 - [ ] Milestone 9: Not-found behavior
 - [ ] Milestone 10: Chat UI
 - [ ] Milestone 11: Input check
