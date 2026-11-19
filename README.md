@@ -116,7 +116,7 @@ uv sync
 ollama pull qwen2.5:3b
 ollama pull nomic-embed-text
 cp .env.example .env
-docker compose up -d
+docker compose up -d --wait
 uv run --env-file .env python -m app.ask_notes.setup_db
 ```
 
@@ -124,7 +124,7 @@ uv run --env-file .env python -m app.ask_notes.setup_db
 
 | Terminal | Command                                         | Runs                 |
 | -------- | ----------------------------------------------- | -------------------- |
-| 1        | `docker compose up -d`                          | Postgres, port 5432  |
+| 1        | `docker compose up -d --wait`                   | Postgres, port 5432  |
 | 2        | `uv run --env-file .env fastapi dev app/api.py` | Python AI, port 8000 |
 | 3        | `cd api && npm run dev`                         | TS API, port 3000    |
 | 4        | `cd web && npm run dev`                         | React, port 5173     |
