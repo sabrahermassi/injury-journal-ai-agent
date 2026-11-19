@@ -42,7 +42,12 @@ def sentence_spans(text: str, max_chars: int) -> list[tuple[int, int]]:
 
 
 def chunk_note(note_id: int, text: str, max_chars: int = 600, overlap: int = 1) -> list[Chunk]:
-    """Group whole sentences into chunks of at most max_chars. Each chunk repeats the last `overlap` sentences of the one before."""
+    """Group whole sentences into chunks of at most max_chars.
+
+    Overlap is best effort: each chunk starts `overlap` sentences before the end of the one before,
+    but always at least one sentence further on. So a chunk that holds only one sentence
+    (because the next one doesn't fit in max_chars) is followed by a chunk with no overlap.
+    """
     if max_chars <= 0 or overlap < 0:
         raise ValueError("max_chars must be positive and overlap not negative")
     spans = sentence_spans(text, max_chars)

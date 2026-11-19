@@ -96,3 +96,10 @@ def test_cut_pieces_have_no_space_at_the_edges() -> None:
     chunks = chunk_note(1, text, max_chars=3, overlap=0)
     check_offsets(text, chunks)
     assert [c.text for c in chunks] == ["a", "b"]
+
+
+def test_overlap_is_skipped_when_a_chunk_holds_one_sentence() -> None:
+    text = "Alpha. Bravo."
+    chunks = chunk_note(1, text, max_chars=6, overlap=1)
+    check_offsets(text, chunks)
+    assert [c.text for c in chunks] == ["Alpha.", "Bravo."]
