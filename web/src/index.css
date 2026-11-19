@@ -5,6 +5,7 @@
   --muted: #6b6b70;
   --border: #e2e2e6;
   --accent: #3b5bdb;
+  --on-accent: #ffffff; /* text on an accent background */
   --error: #c92a2a;
   font-family:
     system-ui,
@@ -23,6 +24,7 @@
     --muted: #9a9aa2;
     --border: #34343a;
     --accent: #7c95f5;
+    --on-accent: #161618; /* white on this light blue is too faint: use dark text */
     --error: #ff8787;
   }
 }
@@ -51,5 +53,5 @@ body {
 .menu button[aria-pressed="true"] {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }

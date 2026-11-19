@@ -44,7 +44,10 @@ def answer_so_far(raw: str) -> str:
             escape = raw[i : i + 6] if raw[i + 1 : i + 2] == "u" else raw[i : i + 2]
             if len(escape) < (6 if raw[i + 1 : i + 2] == "u" else 2):
                 break  # the escape is cut off: wait for the next piece
-            value.append(json.loads(f'"{escape}"'))
+            try:
+                value.append(json.loads(f'"{escape}"'))
+            except json.JSONDecodeError:
+                break  # invalid escape: stop the preview; the final check rejects the reply
             i += len(escape)
             continue
         value.append(char)

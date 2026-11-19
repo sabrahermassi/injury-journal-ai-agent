@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { fetchNote, streamAnswer, type Citation, type Note, type StreamEvent } from "./api";
+import {
+  fetchNote,
+  streamAnswer,
+  type Citation,
+  type Note,
+  type StreamEvent,
+} from "./api";
 import "./AskPage.css";
 
 type Phase = "idle" | "streaming" | "done" | "lost";
@@ -14,7 +20,10 @@ export default function AskPage() {
   const [citations, setCitations] = useState<Citation[]>([]);
   const [refused, setRefused] = useState(false);
   const [error, setError] = useState("");
-  const [opened, setOpened] = useState<{ note: Note; citation: Citation } | null>(null);
+  const [opened, setOpened] = useState<{
+    note: Note;
+    citation: Citation;
+  } | null>(null);
   const controller = useRef<AbortController | null>(null);
 
   // Leaving the page (switching to Search, closing the tab) stops the answer on the server too.
@@ -31,6 +40,7 @@ export default function AskPage() {
       setPhase("done");
     }
     if (event.type === "error") {
+      setAnswer(""); // a cut-off answer was never checked: don't leave it on screen
       setError(event.message);
       setPhase("lost");
     }
@@ -63,6 +73,7 @@ export default function AskPage() {
     } catch {
       if (current.signal.aborted) return; // we stopped it on purpose
       if (!finished) {
+        setAnswer(""); // a cut-off answer was never checked: don't leave it on screen
         setError("Connection lost.");
         setPhase("lost");
       }
@@ -85,7 +96,9 @@ export default function AskPage() {
   return (
     <main>
       <h1>Ask your notes</h1>
-      <p className="subtitle">Answers come only from your notes, with quotes checked word for word.</p>
+      <p className="subtitle">
+        Answers come only from your notes, with quotes checked word for word.
+      </p>
 
       <form onSubmit={handleSubmit} className="search-row">
         <input
@@ -98,13 +111,19 @@ export default function AskPage() {
           Ask
         </button>
         {phase === "streaming" && (
-          <button type="button" className="secondary" onClick={() => controller.current?.abort()}>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => controller.current?.abort()}
+          >
             Stop
           </button>
         )}
       </form>
 
-      {phase === "streaming" && <p className="status">{status || "Starting"}…</p>}
+      {phase === "streaming" && (
+        <p className="status">{status || "Starting"}…</p>
+      )}
 
       {(answer || phase === "done") && (
         <section className={`answer ${refused ? "refused" : ""}`}>
@@ -112,18 +131,30 @@ export default function AskPage() {
             {answer}
             {phase === "done" &&
               citations.map((citation, index) => (
-                <button key={index} type="button" className="cite" onClick={() => void openCitation(citation)}>
+                <button
+                  key={index}
+                  type="button"
+                  className="cite"
+                  onClick={() => void openCitation(citation)}
+                >
                   [{index + 1}]
                 </button>
               ))}
           </p>
-          {phase === "streaming" && <p className="hint">Not checked yet: quotes are checked when the answer is finished.</p>}
+          {phase === "streaming" && (
+            <p className="hint">
+              Not checked yet: quotes are checked when the answer is finished.
+            </p>
+          )}
         </section>
       )}
 
       {phase === "lost" && (
         <p className="error">
-          {error} <button type="button" onClick={() => void ask(asked)}>Retry</button>
+          {error}{" "}
+          <button type="button" onClick={() => void ask(asked)}>
+            Retry
+          </button>
         </p>
       )}
       {phase !== "lost" && error && <p className="error">{error}</p>}
@@ -131,14 +162,25 @@ export default function AskPage() {
       {opened && (
         <section className="note">
           <h2>
-            Note {opened.note.note_date ?? ""} {opened.note.body_part ? `· ${opened.note.body_part}` : ""}
+            Note {opened.note.note_date ?? ""}{" "}
+            {opened.note.body_part ? `· ${opened.note.body_part}` : ""}
           </h2>
           <p>
-            {opened.note.text.slice(0, opened.citation.start)}
-            <mark>{opened.note.text.slice(opened.citation.start, opened.citation.end)}</mark>
-            {opened.note.text.slice(opened.citation.end)}
+            {Array.from(opened.note.text)
+              .slice(0, opened.citation.start)
+              .join("")}
+            <mark>
+              {Array.from(opened.note.text)
+                .slice(opened.citation.start, opened.citation.end)
+                .join("")}
+            </mark>
+            {Array.from(opened.note.text).slice(opened.citation.end).join("")}
           </p>
-          <button type="button" className="secondary" onClick={() => setOpened(null)}>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => setOpened(null)}
+          >
             Close
           </button>
         </section>
