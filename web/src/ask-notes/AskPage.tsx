@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   fetchNote,
+  InvalidQuestionError,
+  MAX_QUESTION_LENGTH,
   streamAnswer,
   type Citation,
   type Note,
@@ -25,6 +27,7 @@ export default function AskPage() {
     citation: Citation;
   } | null>(null);
   const controller = useRef<AbortController | null>(null);
+  const lookup = useRef(0); // number of the latest citation lookup: older answers are ignored
 
   // Leaving the page (switching to Search, closing the tab) stops the answer on the server too.
   useEffect(() => () => controller.current?.abort(), []);
@@ -58,6 +61,7 @@ export default function AskPage() {
     setRefused(false);
     setError("");
     setOpened(null);
+    lookup.current += 1; // a citation lookup still loading belongs to the old question
 
     let finished = false;
     try {
@@ -70,8 +74,15 @@ export default function AskPage() {
         current.signal,
       );
       if (!finished) throw new Error("stream ended early"); // the connection dropped mid-answer
-    } catch {
+    } catch (error) {
       if (current.signal.aborted) return; // we stopped it on purpose
+      if (error instanceof InvalidQuestionError) {
+        setError(
+          "The question was rejected. Check it isn't empty or longer than 1000 characters.",
+        );
+        setPhase("idle"); // no Retry: the same question would be rejected again
+        return;
+      }
       if (!finished) {
         setAnswer(""); // a cut-off answer was never checked: don't leave it on screen
         setError("Connection lost.");
@@ -82,15 +93,29 @@ export default function AskPage() {
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (question.trim()) void ask(question.trim());
+    const text = question.trim();
+    if (text && text.length <= MAX_QUESTION_LENGTH) void ask(text);
   }
 
   async function openCitation(citation: Citation) {
+    const thisLookup = ++lookup.current;
     try {
-      setOpened({ note: await fetchNote(citation.note_id), citation });
+      const note = await fetchNote(citation.note_id);
+      if (thisLookup === lookup.current) setOpened({ note, citation }); // still the latest click
     } catch {
-      setError("Could not load that note.");
+      if (thisLookup === lookup.current) setError("Could not load that note.");
     }
+  }
+
+  function stop() {
+    controller.current?.abort(); // closes the connection: the model stops on the server
+    setAnswer(""); // the cut-off answer was never checked
+    setPhase("idle");
+  }
+
+  function closeNote() {
+    lookup.current += 1; // a lookup still loading must not reopen it
+    setOpened(null);
   }
 
   return (
@@ -105,17 +130,14 @@ export default function AskPage() {
           type="search"
           placeholder="e.g. did I need an X-ray for my ankle?"
           value={question}
+          maxLength={MAX_QUESTION_LENGTH}
           onChange={(event) => setQuestion(event.target.value)}
         />
         <button type="submit" disabled={!question.trim()}>
           Ask
         </button>
         {phase === "streaming" && (
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => controller.current?.abort()}
-          >
+          <button type="button" className="secondary" onClick={stop}>
             Stop
           </button>
         )}
@@ -166,21 +188,16 @@ export default function AskPage() {
             {opened.note.body_part ? `· ${opened.note.body_part}` : ""}
           </h2>
           <p>
-            {Array.from(opened.note.text)
-              .slice(0, opened.citation.start)
-              .join("")}
+            {opened.note.text.slice(0, opened.citation.start)}
             <mark>
-              {Array.from(opened.note.text)
-                .slice(opened.citation.start, opened.citation.end)
-                .join("")}
+              {opened.note.text.slice(
+                opened.citation.start,
+                opened.citation.end,
+              )}
             </mark>
-            {Array.from(opened.note.text).slice(opened.citation.end).join("")}
+            {opened.note.text.slice(opened.citation.end)}
           </p>
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => setOpened(null)}
-          >
+          <button type="button" className="secondary" onClick={closeNote}>
             Close
           </button>
         </section>

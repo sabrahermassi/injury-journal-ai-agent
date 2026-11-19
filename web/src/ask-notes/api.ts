@@ -8,7 +8,11 @@ export type Citation = {
   quote: string;
 };
 
-export type AskResult = { answer: string; citations: Citation[]; refused: boolean };
+export type AskResult = {
+  answer: string;
+  citations: Citation[];
+  refused: boolean;
+};
 
 export type StreamEvent =
   | { type: "status"; text: string }
@@ -25,6 +29,11 @@ export type Note = {
   note_date: string | null;
 };
 
+export const MAX_QUESTION_LENGTH = 1000; // the API rejects longer questions
+
+// The API rejected the question itself (too long, empty...): retrying the same question won't help.
+export class InvalidQuestionError extends Error {}
+
 // Ask a question and call onEvent for each event as it arrives (Server-Sent Events).
 // Aborting the signal closes the connection, which stops the model on the server.
 export async function streamAnswer(
@@ -38,7 +47,10 @@ export async function streamAnswer(
     body: JSON.stringify({ question }),
     signal,
   });
-  if (!response.ok || response.body === null) throw new Error(`Ask failed: ${response.status}`);
+  if (response.status === 400)
+    throw new InvalidQuestionError("The question was rejected.");
+  if (!response.ok || response.body === null)
+    throw new Error(`Ask failed: ${response.status}`);
 
   const decoder = new TextDecoder();
   const reader = response.body.getReader();
@@ -51,7 +63,8 @@ export async function streamAnswer(
     while (end !== -1) {
       const line = buffer.slice(0, end);
       buffer = buffer.slice(end + 2);
-      if (line.startsWith("data: ")) onEvent(JSON.parse(line.slice("data: ".length)));
+      if (line.startsWith("data: "))
+        onEvent(JSON.parse(line.slice("data: ".length)));
       end = buffer.indexOf("\n\n");
     }
   }
