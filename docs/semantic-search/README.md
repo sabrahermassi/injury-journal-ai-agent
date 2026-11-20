@@ -1,6 +1,6 @@
 # Project 1: Semantic search
 
-Search injury notes by meaning, and filter by the fields an LLM extracted from each note. Finished version: tag [p1-semantic-search](https://github.com/sabrahermassi/injury-semantic-search/tree/p1-semantic-search).
+Search injury notes by meaning, and filter by the fields an LLM extracted from each note. Finished version: tag [p1-semantic-search](https://github.com/sabrahermassi/injury-journal-ai-agent/tree/p1-semantic-search).
 
 ## Files
 
