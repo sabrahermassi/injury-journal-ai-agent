@@ -673,7 +673,7 @@ wheels = [
 ]
 
 [[package]]
-name = "injury-semantic-search"
+name = "injury-journal-ai-agent"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

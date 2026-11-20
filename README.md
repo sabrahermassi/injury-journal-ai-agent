@@ -1,8 +1,6 @@
-# Injury AI Assistant
+# Injury Journal AI Agent
 
-An AI assistant over personal injury notes, built in 5 projects. Each project adds one capability on top of the last:
-search notes by meaning, ask questions with cited answers, measure and improve retrieval, let an agent act with tools,
-and run it all reliably in production.
+An AI agent that searches, answers and acts on personal injury records. It turns messy notes into structured data, answers questions with citations verified word for word, refuses when the notes don't hold the answer, and takes actions through tools with human approval for every change. Built in 5 projects, each adding one capability on top of the last.
 
 ## The whole app
 
@@ -82,9 +80,9 @@ flowchart TB
 
 | Project            | What it adds                                                                     | Status                                                                                           | Docs                                                   |
 | ------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| 1. Semantic search | Extract fields from messy notes, search by meaning with filters                  | ✅ done ([tag](https://github.com/sabrahermassi/injury-semantic-search/tree/p1-semantic-search)) | [docs/semantic-search](docs/semantic-search/README.md) |
-| 2. Ask my notes    | Chunk long notes in Postgres + pgvector, answer questions with checked citations | 🚧 in progress                                                                                   | [docs/ask-notes](docs/ask-notes/README.md)             |
-| 3. RAG evals       | Keyword + vector search, fusion, reranking, measured with hit rate and MRR       | planned                                                                                          |                                                        |
+| 1. Semantic search | Extract fields from messy notes, search by meaning with filters                  | ✅ done ([tag](https://github.com/sabrahermassi/injury-journal-ai-agent/tree/p1-semantic-search)) | [docs/semantic-search](docs/semantic-search/README.md) |
+| 2. Ask my notes    | Chunk long notes in Postgres + pgvector, answer questions with checked citations | ✅ done                                                                                          | [docs/ask-notes](docs/ask-notes/README.md)             |
+| 3. RAG evals       | Keyword + vector search, fusion, reranking, measured with hit rate and MRR       | 🚧 in progress                                                                                   |                                                        |
 | 4. Agent           | Tool-calling loop with memory, guarded text-to-SQL and approvals                 | planned                                                                                          |                                                        |
 | 5. Production      | Auth, queue with retries, semantic cache, tracing, evals in CI                   | planned                                                                                          |                                                        |
 
@@ -108,8 +106,8 @@ Requires Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js 22+, [Docker De
 **Set up once**
 
 ```bash
-git clone https://github.com/sabrahermassi/injury-semantic-search.git
-cd injury-semantic-search
+git clone https://github.com/sabrahermassi/injury-journal-ai-agent.git
+cd injury-journal-ai-agent
 uv sync
 (cd api && npm install)
 (cd web && npm install)
