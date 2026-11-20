@@ -78,13 +78,13 @@ flowchart TB
 
 ## The projects
 
-| Project            | What it adds                                                                     | Status                                                                                           | Docs                                                   |
-| ------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| Project            | What it adds                                                                     | Status                                                                                            | Docs                                                   |
+| ------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | 1. Semantic search | Extract fields from messy notes, search by meaning with filters                  | ✅ done ([tag](https://github.com/sabrahermassi/injury-journal-ai-agent/tree/p1-semantic-search)) | [docs/semantic-search](docs/semantic-search/README.md) |
-| 2. Ask my notes    | Chunk long notes in Postgres + pgvector, answer questions with checked citations | ✅ done                                                                                          | [docs/ask-notes](docs/ask-notes/README.md)             |
-| 3. RAG evals       | Keyword + vector search, fusion, reranking, measured with hit rate and MRR       | 🚧 in progress                                                                                   |                                                        |
-| 4. Agent           | Tool-calling loop with memory, guarded text-to-SQL and approvals                 | planned                                                                                          |                                                        |
-| 5. Production      | Auth, queue with retries, semantic cache, tracing, evals in CI                   | planned                                                                                          |                                                        |
+| 2. Ask my notes    | Chunk long notes in Postgres + pgvector, answer questions with checked citations | ✅ done ([tag](https://github.com/sabrahermassi/injury-journal-ai-agent/tree/p2-ask-notes))       | [docs/ask-notes](docs/ask-notes/README.md)             |
+| 3. RAG evals       | Keyword + vector search, fusion, reranking, measured with hit rate and MRR       | 🚧 in progress                                                                                    |                                                        |
+| 4. Agent           | Tool-calling loop with memory, guarded text-to-SQL and approvals                 | planned                                                                                           |                                                        |
+| 5. Production      | Auth, queue with retries, semantic cache, tracing, evals in CI                   | planned                                                                                           |                                                        |
 
 Each project's README explains how it works, its files, and its own commands.
 
